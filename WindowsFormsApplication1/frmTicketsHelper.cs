@@ -13,6 +13,8 @@ using System.Net.Security;
 using System.Security.Authentication;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Web;
+using System.IO.Compression;
 
 namespace DeGuangTicketsHelper
 {
@@ -41,9 +43,9 @@ namespace DeGuangTicketsHelper
         public static extern bool InternetSetCookie(string lpszUrlName, string lbszCookieName, string lpszCookieData);
 
         /// <summary>
-        /// 登录成功委托
+        /// 无参数方法委托
         /// </summary>
-        public delegate void LoggedDelegate1();
+        public delegate void doWorkDelegate();
         /// <summary>
         /// UI显示消息委托
         /// </summary>
@@ -62,8 +64,10 @@ namespace DeGuangTicketsHelper
         /// <param name="enable"></param>
         public delegate void setControlTextDelegate1(Control con, string text,bool enable);
 
-        public LoggedDelegate1 LoggedDelegate;
+        public doWorkDelegate LoggedDelegate;
+        public doWorkDelegate activateDelegate;
         public showMsgDelegate1 showMsgDelegate;
+        public showMsgDelegate1 shareToWeiboDelegate;
         public setControlTextDelegate1 setControlTextDelegate;
         public focusDelegate1 focusDelegate;
 
@@ -109,7 +113,7 @@ namespace DeGuangTicketsHelper
         /// <summary>
         /// 登录成功时间
         /// </summary>
-        private static DateTime logedTime;
+        private static DateTime endTime;
         /// <summary>
         /// 登录用时
         /// </summary>
@@ -119,13 +123,19 @@ namespace DeGuangTicketsHelper
         /// </summary>
         private string timeSpanStr;
         /// <summary>
+        /// 用于显示的时间与实际阻塞时间相同
+        /// </summary>
+        private int tryInterval;
+        /// <summary>
         /// 德广火车票助手
         /// </summary>
         public frmTicketsHelper()
         {
             InitializeComponent();
-            LoggedDelegate = new LoggedDelegate1(openInWebBrowser);
-            showMsgDelegate = new showMsgDelegate1(showInfo);
+            LoggedDelegate = new doWorkDelegate(openInWebBrowser);
+            activateDelegate = new doWorkDelegate(Activate);
+            showMsgDelegate = new showMsgDelegate1(showLogInfo);
+            shareToWeiboDelegate = new showMsgDelegate1(shareToWeibo);
             setControlTextDelegate = new setControlTextDelegate1(changeControlTxt);
             focusDelegate = new focusDelegate1(setControlFocus);
             cookieContainer = new CookieContainer();
@@ -139,6 +149,7 @@ namespace DeGuangTicketsHelper
         /// <param name="obj"></param>
         private void getVerificationCode(object obj)
         {
+            beginTime = DateTime.Now;
             System.Net.ServicePointManager.CertificatePolicy = new MyPolicy();
             //string url = "http://www.12306.cn/mormhweb/kyfw/";
 
@@ -154,6 +165,7 @@ namespace DeGuangTicketsHelper
         /// </summary>
         private void getVerificationCode()
         {
+            sleep();
             count++;
             string url = "https://dynamic.12306.cn/otsweb/passCodeAction.do?rand=lrand";
             HttpWebRequest request2 = HttpWebResponseUtility.CreateGetHttpResponse(url, cookieContainer, "https://dynamic.12306.cn/otsweb/loginAction.do?method=login");
@@ -186,8 +198,36 @@ namespace DeGuangTicketsHelper
 
                 picValidImg.Image = original;
 
+                this.Invoke(this.showMsgDelegate, "取得验证码成功!");
+
                 this.Invoke(setControlTextDelegate, new object[] { btnLogin, "登录" ,true});
 
+                endTime = DateTime.Now;
+
+                timeSpan = endTime.Subtract(beginTime);
+
+                if (count > 1)
+                {
+                    MessageBox.Show("12306不给力啊!!!尝试了" + count + "次用了" + getTimeSpanString(timeSpan) + "后才得到验证码图片.", "德广火车票助手 温馨提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    this.Invoke(activateDelegate);
+                    this.Invoke(shareToWeiboDelegate, new object[] { "12306不给力啊,登录页面尝试了"+count+"次用了"+getTimeSpanString(timeSpan)+"后,才显示出来.还好有#德广火车票助手#帮助,不然就鼠标键盘就被我按报废啦!" });
+                }
+            }
+        }
+
+        /// <summary>
+        /// 线程阻塞,重试间隔
+        /// </summary>
+        private void sleep()
+        {
+            if (count > 0)
+            {
+                tryInterval = TryInterval;
+                if (tryInterval > 0)
+                {
+                    this.Invoke(new showMsgDelegate1(showTimeInfo), "休息" + tryInterval + "秒");
+                }
+                Thread.Sleep(TryInterval * 1000);
             }
         }
 
@@ -258,6 +298,24 @@ namespace DeGuangTicketsHelper
         }
 
         /// <summary>
+        /// 时间间隔
+        /// </summary>
+        private int TryInterval
+        {
+            get
+            {
+                if (chkRadom.Checked == true)
+                {
+                    return new Random((int)DateTime.Now.Ticks).Next(Convert.ToInt32(numInterval.Value));
+                }
+                else
+                {
+                    return Convert.ToInt32(numInterval.Value);
+                }
+            }
+        }
+
+        /// <summary>
         /// 登录
         /// </summary>
         private void login()
@@ -273,6 +331,7 @@ namespace DeGuangTicketsHelper
             try
             {
                 running = true;
+                sleep();
                 if (stop == true)
                 {
                     return;
@@ -344,7 +403,12 @@ namespace DeGuangTicketsHelper
                 {
                     // grab te response and print it out to the console along with the status code
                     //HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                    html = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                    Stream receiveStream = response.GetResponseStream();
+                    if (response.ContentEncoding.ToLower().Contains("gzip"))
+                    {
+                        receiveStream = new GZipStream(receiveStream, CompressionMode.Decompress);
+                    }
+                    html = new StreamReader(receiveStream).ReadToEnd();
                     if (html.IndexOf("当前访问用户过多") > 0)
                     {
                         this.Invoke(this.showMsgDelegate, "当前访问用户过多");
@@ -372,18 +436,26 @@ namespace DeGuangTicketsHelper
                     {
                         messageBoxShowInfo("您的用户已经被锁定,请稍候再试!");
                     }
+                    else if (html.IndexOf("系统维护中") > 0)
+                    {
+                        messageBoxShowInfo("系统维护中!");
+                    }
                     else if (html.IndexOf("我的12306") > 0)
                     {
-                        logedTime = DateTime.Now;
+                        this.Invoke(activateDelegate);
+                        endTime = DateTime.Now;
                         logged = true;
-                        timeSpan = logedTime.Subtract(beginTime);
-                        timeSpanStr=getTimeSpanString(timeSpan);
+                        timeSpan = endTime.Subtract(beginTime);
+                        timeSpanStr = getTimeSpanString(timeSpan);
 
-                        MessageBox.Show("经过 " + timeSpanStr +", " + count + " 次的尝试后,您已经登录成功!" + Environment.NewLine
-                            + "点击确定打开12306网站,请忽略登录界面,直接点击\"车票预订\"就可以啦!" + Environment.NewLine 
-                            + Environment.NewLine 
-                            + "深圳市德广信息技术有限公司 祝您:"+ Environment.NewLine
+                        MessageBox.Show("经过 " + timeSpanStr + ", " + count + " 次的尝试后,您已经登录成功!" + Environment.NewLine
+                            + "点击确定打开12306网站,请忽略登录界面,直接点击\"车票预订\"就可以啦!" + Environment.NewLine
+                            + Environment.NewLine
+                            + "深圳市德广信息技术有限公司 祝您:" + Environment.NewLine
                             + "回家一路顺风!全家身体健康!幸福快乐!事事如意!", "德广火车票助手 恭喜您", MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1);
+
+                        this.Invoke(shareToWeiboDelegate, new object[] { "我用#德广火车票助手#经过" + timeSpanStr +"尝试登录"+ count + "次后,成功登录上了12306.cn!你用了多长时间才登录成功的呢?" });
+
                         this.Invoke(LoggedDelegate);
                         //openie();
                         this.Invoke(this.showMsgDelegate, "登录成功!");
@@ -506,10 +578,28 @@ namespace DeGuangTicketsHelper
         /// 显示信息
         /// </summary>
         /// <param name="info"></param>
+        private void showLogInfo(string info)
+        {
+            info = "第"+count+"次尝试:" + info;
+            showTimeInfo(info);
+        }
+
+        /// <summary>
+        /// 显示信息-加时间
+        /// </summary>
+        /// <param name="info"></param>
+        private void showTimeInfo(string info)
+        {
+            info = DateTime.Now.ToString("HH:mm:ss ") + info;
+            showInfo(info);
+        }
+
+        /// <summary>
+        /// 显示信息
+        /// </summary>
+        /// <param name="info"></param>
         private void showInfo(string info)
         {
-            info = count+"-" +DateTime.Now.ToString("HH:mm:ss ")+ info;
-
             if (lstMsg.Items.Count > 100)
             {
                 lstMsg.Items.RemoveAt(100);
@@ -551,7 +641,81 @@ namespace DeGuangTicketsHelper
         /// <param name="e"></param>
         private void frmTicketsHelper_Load(object sender, EventArgs e)
         {
-            ThreadPool.QueueUserWorkItem(new WaitCallback(getVerificationCode),new object[]{this});
+            ThreadPool.QueueUserWorkItem(new WaitCallback(getVerificationCode), new object[] { this });
+            this.Invoke(shareToWeiboDelegate, new object[] { "我正在使用#德广火车票助手#抢火车票!亲们祝我好运噢!" });
+            chkRadom.Checked = true;
+        }
+
+        /// <summary>
+        /// 分享至微博
+        /// </summary>
+        /// <param name="message"></param>
+        private void shareToWeibo(string message)
+        {
+            #region 使用Web代码
+            this.webBrowser1.Navigate("http://www.9inf.com/TicketsHelper1.03.php?title=" + HttpUtility.UrlEncode(message) + "&url="+HttpUtility.UrlEncode("http://www.9inf.com/content/%E5%BE%B7%E5%B9%BF%E7%81%AB%E8%BD%A6%E7%A5%A8%E5%8A%A9%E6%89%8B"));
+            #endregion
+
+            #region 使用本地代码
+            //StringBuilder sb = new StringBuilder();
+            //sb.Append("<script type=\"text/javascript\" charset=\"utf-8\">");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("(function(){");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("  var _w = 142 , _h = 32;");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("  var param = {");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("    url:location.href,");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("    type:'4',");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("    count:'', /**是否显示分享数，1显示(可选)*/");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("    appkey:'1049229778', /**您申请的应用appkey,显示分享来源(可选)*/");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("    title:'"+message+"', /**分享的文字内容(可选，默认为所在页面的title)*/");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("    pic:'', /**分享图片的路径(可选)*/");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("    ralateUid:'2244896670', /**关联用户的UID，分享微博会@该用户(可选)*/");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("	language:'zh_cn', /**设置语言，zh_cn|zh_tw(可选)*/");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("    rnd:new Date().valueOf()");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("  }");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("  var temp = [];");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("  for( var p in param ){");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("    temp.push(p + '=' + encodeURIComponent( param[p] || '' ) )");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("  }");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("  document.write('<iframe allowTransparency=\"true\" frameborder=\"0\" scrolling=\"no\" src=\"http://hits.sinajs.cn/A1/weiboshare.html?' + temp.join('&') + '\" width=\"'+ _w+'\" height=\"'+_h+'\"></iframe>')");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("})()");
+            //sb.Append(Environment.NewLine);
+            //sb.Append("</script>");
+            //sb.Append(Environment.NewLine);
+            //DisplayHtml(sb.ToString());
+            #endregion
+        }
+
+        /// <summary>
+        /// 显示html内容至WebBrowser
+        /// </summary>
+        /// <param name="html"></param>
+        private void DisplayHtml(string html)
+        {
+            webBrowser1.Navigate("about:blank");
+            if (webBrowser1.Document != null)
+            {
+                webBrowser1.Document.Write(string.Empty);
+            }
+            webBrowser1.DocumentText = html;
         }
 
         /// <summary>
@@ -561,7 +725,10 @@ namespace DeGuangTicketsHelper
         /// <param name="e"></param>
         private void btnExit_Click(object sender, EventArgs e)
         {
-            this.Close();
+            if (MessageBox.Show("您确定要退出德广火车票助手吗?", "德广火车票助手友情 温馨提示", MessageBoxButtons.YesNo, MessageBoxIcon.Information, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
+            {
+                this.Close();
+            }
         }
 
         /// <summary>
@@ -582,6 +749,26 @@ namespace DeGuangTicketsHelper
         private void tssAuthor_Click(object sender, EventArgs e)
         {
             System.Diagnostics.Process.Start("http://www.9inf.com");
+        }
+
+        private void chkRadom_CheckedChanged(object sender, EventArgs e)
+        {
+            if (chkRadom.Checked == true)
+            {
+                labInterval.Text = "最大尝试间隔";
+            }
+            else
+            {
+                labInterval.Text = "尝试间隔";
+            }
+        }
+
+        private void numInterval_Validating(object sender, CancelEventArgs e)
+        {
+            if (numInterval.Value < 5)
+            {
+                MessageBox.Show("如果尝试间隔小于5秒,有可能会被12306封锁,欲速则不达!", "德广火车票助手友情 温馨提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
     }
 

@@ -29,11 +29,22 @@ namespace DeGuangTicketsHelper
     public partial class TickerWebBrowser : Form
     {
         string currentUrl;
+        string queryTicketUrl;
+        string submitOrderUrl;
+        string confirmOrderUrl;
+        string strutsToken;
+
 
         public TickerWebBrowser()
         {
             InitializeComponent();
             this.webBrowser1.DocumentCompleted += new WebBrowserDocumentCompletedEventHandler(webBrowser1_DocumentCompleted);
+            this.webBrowser1.Navigating += new WebBrowserNavigatingEventHandler(webBrowser1_Navigating);
+        }
+
+        void webBrowser1_Navigating(object sender, WebBrowserNavigatingEventArgs e)
+        {
+            Dictionary<String, String> POSTData = GetPostData(webBrowser1.Document,null, e.Url, webBrowser1.Url);
         }
 
         void webBrowser1_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
@@ -44,6 +55,20 @@ namespace DeGuangTicketsHelper
             {
                 this.webBrowser1.Navigate("https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=init", "main");
             }
+        }
+
+        private Dictionary<String, String> GetPostData(HtmlDocument doc,string formName, Uri target, Uri baseURL)
+        {
+            Dictionary<String, String> ret = new Dictionary<String, String>();
+            foreach (HtmlElement form in doc.GetElementsByTagName("save_passenger_single"))
+                if ((form.GetAttribute("mode").ToLower() == "post") && ((target == (new Uri(baseURL, form.GetAttribute("target"))))))
+                    foreach (HtmlElement widget in form.GetElementsByTagName("input"))
+                    {
+                        String name = widget.GetAttribute("name");
+                        if (name != "")
+                            ret.Add(name, widget.GetAttribute("value"));
+                    }
+            return ret;
         }
 
         public string Url
