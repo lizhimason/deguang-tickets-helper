@@ -79,7 +79,7 @@
             this.radDefaultWebBrowser.Location = new System.Drawing.Point(6, 61);
             this.radDefaultWebBrowser.Name = "radDefaultWebBrowser";
             this.radDefaultWebBrowser.Size = new System.Drawing.Size(107, 16);
-            this.radDefaultWebBrowser.TabIndex = 0;
+            this.radDefaultWebBrowser.TabIndex = 6;
             this.radDefaultWebBrowser.Tag = "";
             this.radDefaultWebBrowser.Text = "系统默认浏览器";
             this.toolTip1.SetToolTip(this.radDefaultWebBrowser, "[暂不支持]您设定的系统默认Web浏览器");
@@ -91,7 +91,7 @@
             this.radIE.Location = new System.Drawing.Point(6, 39);
             this.radIE.Name = "radIE";
             this.radIE.Size = new System.Drawing.Size(71, 16);
-            this.radIE.TabIndex = 0;
+            this.radIE.TabIndex = 5;
             this.radIE.Tag = "";
             this.radIE.Text = "IE浏览器";
             this.toolTip1.SetToolTip(this.radIE, "微软Internet Explorer浏览器");
@@ -104,7 +104,7 @@
             this.radTickerWebBrowser.Location = new System.Drawing.Point(6, 17);
             this.radTickerWebBrowser.Name = "radTickerWebBrowser";
             this.radTickerWebBrowser.Size = new System.Drawing.Size(119, 16);
-            this.radTickerWebBrowser.TabIndex = 0;
+            this.radTickerWebBrowser.TabIndex = 4;
             this.radTickerWebBrowser.TabStop = true;
             this.radTickerWebBrowser.Tag = "";
             this.radTickerWebBrowser.Text = "内置浏览器(推荐)";
@@ -129,7 +129,7 @@
             this.txtPassword.Name = "txtPassword";
             this.txtPassword.PasswordChar = '*';
             this.txtPassword.Size = new System.Drawing.Size(126, 26);
-            this.txtPassword.TabIndex = 44;
+            this.txtPassword.TabIndex = 2;
             this.toolTip1.SetToolTip(this.txtPassword, "输入您在12306的密码");
             // 
             // txtUserName
@@ -138,7 +138,7 @@
             this.txtUserName.Location = new System.Drawing.Point(73, 96);
             this.txtUserName.Name = "txtUserName";
             this.txtUserName.Size = new System.Drawing.Size(126, 26);
-            this.txtUserName.TabIndex = 43;
+            this.txtUserName.TabIndex = 1;
             this.toolTip1.SetToolTip(this.txtUserName, "输入您在12306的登录名");
             // 
             // picValidImg
@@ -158,7 +158,7 @@
             this.txtVerificationCode.MaxLength = 4;
             this.txtVerificationCode.Name = "txtVerificationCode";
             this.txtVerificationCode.Size = new System.Drawing.Size(43, 26);
-            this.txtVerificationCode.TabIndex = 45;
+            this.txtVerificationCode.TabIndex = 3;
             this.toolTip1.SetToolTip(this.txtVerificationCode, "输入右图中的验证码");
             // 
             // statusStrip1
@@ -195,7 +195,7 @@
             this.btnExit.Location = new System.Drawing.Point(179, 364);
             this.btnExit.Name = "btnExit";
             this.btnExit.Size = new System.Drawing.Size(159, 33);
-            this.btnExit.TabIndex = 47;
+            this.btnExit.TabIndex = 10;
             this.btnExit.Text = "退出(&E)";
             this.btnExit.UseVisualStyleBackColor = true;
             this.btnExit.Click += new System.EventHandler(this.btnExit_Click);
@@ -249,7 +249,7 @@
             this.btnLogin.Location = new System.Drawing.Point(12, 364);
             this.btnLogin.Name = "btnLogin";
             this.btnLogin.Size = new System.Drawing.Size(159, 33);
-            this.btnLogin.TabIndex = 37;
+            this.btnLogin.TabIndex = 9;
             this.btnLogin.Text = "登录 ";
             this.btnLogin.UseVisualStyleBackColor = true;
             this.btnLogin.Click += new System.EventHandler(this.btnLogin_Click);
@@ -260,7 +260,7 @@
             this.numInterval.Location = new System.Drawing.Point(120, 192);
             this.numInterval.Name = "numInterval";
             this.numInterval.Size = new System.Drawing.Size(77, 26);
-            this.numInterval.TabIndex = 48;
+            this.numInterval.TabIndex = 7;
             this.numInterval.Value = new decimal(new int[] {
             5,
             0,
@@ -295,7 +295,7 @@
             this.chkRadom.Location = new System.Drawing.Point(242, 197);
             this.chkRadom.Name = "chkRadom";
             this.chkRadom.Size = new System.Drawing.Size(91, 20);
-            this.chkRadom.TabIndex = 50;
+            this.chkRadom.TabIndex = 8;
             this.chkRadom.Text = "随机间隔";
             this.chkRadom.UseVisualStyleBackColor = true;
             this.chkRadom.CheckedChanged += new System.EventHandler(this.chkRadom_CheckedChanged);

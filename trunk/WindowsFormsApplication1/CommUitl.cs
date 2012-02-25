@@ -4,6 +4,11 @@ using System.Text;
 using System.Windows.Forms;
 using System.Drawing;
 using mshtml;
+using System.Net;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.IO.Compression;
+using System.Web.UI;
 
 namespace DeGuangTicketsHelper
 {
@@ -56,6 +61,164 @@ namespace DeGuangTicketsHelper
             rang.execCommand("Copy", false, null);
             RegImg = Clipboard.GetImage();
             Clipboard.Clear(); return RegImg;
+        }
+
+        public static string getString(string url)
+        {
+            return getString(url, null);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        public static string getString(string url,CookieContainer cookieContainer)
+        {
+            string result=string.Empty;
+            HttpWebRequest request = HttpWebResponseUtility.CreateGetHttpResponse(url,cookieContainer);
+            HttpWebResponse response = null;
+            try
+            {
+                response = (HttpWebResponse)request.GetResponse();
+
+                result = getResponseString( response);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+            return result;
+        }
+
+        private static string getResponseString(HttpWebResponse response)
+        {
+            string result = string.Empty;
+            if (response != null)
+            {
+                Stream responseStream = response.GetResponseStream();
+                if (response.ContentEncoding.ToLower().Contains("gzip"))
+                {
+                    responseStream = new GZipStream(responseStream, CompressionMode.Decompress);
+                }
+                using (StreamReader streamReader = new StreamReader(responseStream)) //, Encoding.GetEncoding(response.ContentEncoding
+                {
+                    result = streamReader.ReadToEnd();
+                }
+                if (responseStream != null)
+                {
+                    responseStream.Close();
+                }
+            }
+            return result;
+        }
+
+        public static string postString(string url, IDictionary<string, string> parameters, int? timeout, string userAgent, Encoding requestEncoding, CookieCollection cookies,string referer)
+        {
+            string result = string.Empty;
+            try
+            {
+                HttpWebResponse response = HttpWebResponseUtility.CreatePostHttpResponse(url, parameters, timeout, userAgent, requestEncoding, cookies, referer);
+                result = getResponseString(response);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+            return result;
+        }
+
+        public static string ReplaceHTMLAttributes(string html)
+        {
+            //删除脚本
+            html = Regex.Replace(html, @"<script[^>]*?>.*?</script>", "", RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"<style[^>]*?>.*?</style>", "", RegexOptions.IgnoreCase);
+            //删除HTML
+            html = Regex.Replace(html, @"<(.[^>]*)>", "", RegexOptions.IgnoreCase);
+            //html = Regex.Replace(html, @"([\r\n])[\s]+", "", RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"-->", "", RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"<!--.*", "", RegexOptions.IgnoreCase);
+
+            html = Regex.Replace(html, @"&(quot|#34);", "\"", RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"&(amp|#38);", "&", RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"&(lt|#60);", "<", RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"&(gt|#62);", ">", RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"&(nbsp|#160);", " ", RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"&(iexcl|#161);", "\xa1", RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"&(cent|#162);", "\xa2", RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"&(pound|#163);", "\xa3", RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"&(copy|#169);", "\xa9", RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"&#(\d+);", "", RegexOptions.IgnoreCase);
+
+            html.Replace("<", "");
+            html.Replace(">", "");
+
+            return html;
+        }
+
+        /// <summary>
+        /// 得到枚举值的数量
+        /// </summary>
+        /// <param name="enumType">枚举类型</param>
+        /// <returns></returns>
+        public static int GetEnumCount(Type enumType)
+        {
+            return Enum.GetValues(enumType).Length;
+        }
+
+        /// <summary>
+        /// 是否在执行选中事件.防止重复执行
+        /// </summary>
+        private static bool isCheckBox_Click=false;
+        /// <summary>
+        /// 包括选中所有复选框的复选框列表
+        /// </summary>
+        /// <param name="currentCheckBox">点击的复选框</param>
+        /// <param name="selectAllCheckBox">选择所有筛选框</param>
+        /// <param name="checkboxCollection">其他的复选框</param>
+        public static void SelectAllChkChange(CheckBox currentCheckBox, CheckBox selectAllCheckBox, System.Windows.Forms.Control.ControlCollection checkboxCollection)
+        {
+            if (isCheckBox_Click == false)
+            {
+                isCheckBox_Click = true;
+                if (currentCheckBox == selectAllCheckBox)
+                {
+                    foreach (var item in checkboxCollection)
+                    {
+                        if (item is CheckBox)
+                        {
+                            (item as CheckBox).Checked = currentCheckBox.Checked;
+                        }
+                    }
+                }
+                else
+                {
+                    if (currentCheckBox.Checked == false)
+                    {
+                        selectAllCheckBox.Checked = false;
+                    }
+                    else
+                    {
+                        bool allSelected = true;
+                        foreach (var item in checkboxCollection)
+                        {
+                            if (item is CheckBox)
+                            {
+                                if (item == selectAllCheckBox)
+                                {
+                                    continue;
+                                }
+                                else
+                                {
+                                    allSelected &= (item as CheckBox).Checked;
+                                }
+                            }
+                        }
+                        selectAllCheckBox.Checked = allSelected;
+                    }
+                }
+                isCheckBox_Click = false;
+            }
         }
     }
 }
