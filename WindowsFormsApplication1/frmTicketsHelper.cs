@@ -138,8 +138,8 @@ namespace DeGuangTicketsHelper
             shareToWeiboDelegate = new showMsgDelegate1(shareToWeibo);
             setControlTextDelegate = new setControlTextDelegate1(changeControlTxt);
             focusDelegate = new focusDelegate1(setControlFocus);
-            cookieContainer = new CookieContainer();
-            cookieCollection = new CookieCollection();
+            cookieContainer = CommData.cookieContainer;
+            cookieCollection = CommData.cookieCollection;
             tssVersion.Text = "版本: " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
         }
 
@@ -572,6 +572,8 @@ namespace DeGuangTicketsHelper
                     MessageBox.Show(other.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 }
             }
+            frmTicketQuery frmTicketQuery = new frmTicketQuery();
+            frmTicketQuery.Show();
         }
 
         /// <summary>

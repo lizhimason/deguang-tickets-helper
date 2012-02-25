@@ -32,6 +32,7 @@ namespace DeGuangTicketsHelper
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new frmTicketsHelper());
+            //Application.Run(new frmTicketQuery());
         }
     }
 }

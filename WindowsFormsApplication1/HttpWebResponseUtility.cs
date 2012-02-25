@@ -20,6 +20,11 @@ namespace DeGuangTicketsHelper
         private static readonly string DefaultContentType = "text/html; charset=GBK";
         private static readonly int DefaultTimeOut = 30000;
 
+        public static HttpWebRequest CreateGetHttpResponse(string url)
+        {
+            return CreateGetHttpResponse(url, null, null, null, null);
+        }
+
         /// <summary>  
         /// 创建GET方式的HTTP请求  
         /// </summary>  
@@ -68,6 +73,7 @@ namespace DeGuangTicketsHelper
         /// <returns></returns>  
         public static HttpWebRequest CreateGetHttpResponse(string url, int? timeout, string userAgent, CookieContainer cookieContainer, string referer)
         {
+            Debug.WriteLine("CreateGetHttpResponse url:" + url);
             if (string.IsNullOrEmpty(url))
             {
                 throw new ArgumentNullException("url");
@@ -119,6 +125,7 @@ namespace DeGuangTicketsHelper
         /// <returns></returns>  
         public static HttpWebResponse CreatePostHttpResponse(string url, IDictionary<string, string> parameters, int? timeout, string userAgent, Encoding requestEncoding, CookieCollection cookies,string referer)
         {
+            Debug.WriteLine("CreatePostHttpResponse url:" + url);
             HttpWebResponse response = null;
 
                 if (string.IsNullOrEmpty(url))
@@ -141,6 +148,7 @@ namespace DeGuangTicketsHelper
                 {
                     request = WebRequest.Create(url) as HttpWebRequest;
                 }
+
                 request.Method = "POST";
                 request.ContentType = "application/x-www-form-urlencoded";
 
@@ -166,8 +174,9 @@ namespace DeGuangTicketsHelper
                 }
                 if (cookies != null)
                 {
-                    request.CookieContainer = new CookieContainer();
-                    request.CookieContainer.Add(cookies);
+                    request.CookieContainer = CommData.cookieContainer;
+                    //request.CookieContainer = new CookieContainer();
+                    //request.CookieContainer.Add(cookies);
                 }
                 if (!string.IsNullOrEmpty(referer))
                 {
