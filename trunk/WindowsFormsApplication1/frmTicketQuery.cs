@@ -10,11 +10,16 @@ using DeGuangTicketsHelper.Entity;
 using System.Diagnostics;
 using System.Net;
 using System.Web;
+using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
 
 namespace DeGuangTicketsHelper
 {
     public partial class frmTicketQuery : Form
     {
+        [DllImport("wininet.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern bool InternetSetCookie(string lpszUrlName, string lbszCookieName, string lpszCookieData);
+
         private static string stations;
         #region 车站信息
         private static string stations_buffer="@bjb|北京北|VAP|0" +
@@ -1383,6 +1388,10 @@ namespace DeGuangTicketsHelper
         private static BindingList<TicketInfo> ticketInfoList;
         private static List<SeatType> selectedSeatType;
         private static List<KeyValuePair<string, string>> trainNumbers;
+        private static OrderInfo orders;
+        private static List<Passenger> passengers;
+        private static BindingList<Passenger> ordersPassengers;
+        private static string submutOrderRequestUrl;
         /// <summary>
         /// 防止点击复选框,代码勾选其他复选框时,造成的多次调用.
         /// </summary>
@@ -1391,15 +1400,19 @@ namespace DeGuangTicketsHelper
         {
             selectedSeatType = new List<SeatType>();
             trainNumbers=new List<KeyValuePair<string,string>>();
+            ordersPassengers = new BindingList<Passenger>();
+            submutOrderRequestUrl = "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=submutOrderRequest";
             resetTrainNumers();
             InitializeComponent();
             initTicketType();
             initDepartureStation();
             initDestinationStation();
             initDepartureTimes();
+            initFlpPassenger();
             initTicketDataGrid();
             initSeatTypies();
             initTrainPassType();
+            initDgvOrder();
             tssVersion.Text = "版本: " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
             changeMoreOption();
         }
@@ -1413,7 +1426,7 @@ namespace DeGuangTicketsHelper
                 chkbox.Name = "chk" + item.Key;
                 chkbox.Tag = item.Key;
                 chkbox.Text = item.Value;
-                chkbox.Width = 58;
+                chkbox.AutoSize = true;
                 chkbox.CheckedChanged += new EventHandler(chkTrainTypies_CheckedChanged);
                 flpTrainType.Controls.Add(chkbox);
             }
@@ -1469,7 +1482,7 @@ namespace DeGuangTicketsHelper
             DataGridViewTextBoxColumn dgtbcTrainNo = new DataGridViewTextBoxColumn();
             dgtbcTrainNo.Name = "dgtbcTrainNo";
             dgtbcTrainNo.HeaderText = "车次";
-            dgtbcTrainNo.DataPropertyName = "TrainNo";
+            dgtbcTrainNo.DataPropertyName = "StationTrainCode";
             dgtbcTrainNo.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
 
             DataGridViewTextBoxColumn dgtbcDepartureStation = new DataGridViewTextBoxColumn();
@@ -1631,6 +1644,8 @@ namespace DeGuangTicketsHelper
         {
             get
             {
+                // 使用本地车站信息.不从WEB取
+                stations = stations_buffer;
                 if (string.IsNullOrEmpty(stations) == true)
                 {
                     try
@@ -1735,9 +1750,19 @@ namespace DeGuangTicketsHelper
         private void btnQuery_Click(object sender, EventArgs e)
         {
             Cursor.Current = Cursors.WaitCursor;
-            getTicketInfos();
-            labTicketInfo.Text = getTicketInfo(dtpDepartureDate.Value, cboDepartureStation.Text, cboDestinationStation.Text, ticketInfoList.Count);
-            Cursor.Current = Cursors.Default;
+            try
+            {
+                getTicketInfos();
+                labTicketInfo.Text = getTicketInfo(dtpDepartureDate.Value, cboDepartureStation.Text, cboDestinationStation.Text, ticketInfoList.Count);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            finally
+            {
+                Cursor.Current = Cursors.Default;
+            }
         }
 
         /// <summary>
@@ -1745,6 +1770,7 @@ namespace DeGuangTicketsHelper
         /// </summary>
         private void getTicketInfos()
         {
+
             // https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=queryLeftTicket&
             // orderRequest.train_date=2012-02-24&
             // orderRequest.from_station_telecode=IZQ&
@@ -1760,8 +1786,8 @@ namespace DeGuangTicketsHelper
                 "&orderRequest.train_date=" + dtpDepartureDate.Value.ToString("yyyy-MM-dd") +
                 "&orderRequest.from_station_telecode=" + cboDepartureStation.SelectedValue +
                 "&orderRequest.to_station_telecode=" + cboDestinationStation.SelectedValue +
-                "&orderRequest.train_no=" + cboTrainNumber.SelectedValue + 
-                "&trainPassType=" +getTrainPassType() +
+                "&orderRequest.train_no=" + cboTrainNumber.SelectedValue +
+                "&trainPassType=" + getTrainPassType() +
                 "&trainClass=" + HttpUtility.UrlEncode(getTrainClass()) +
                 "&includeStudent=00" +
                 "&seatTypeAndNum=" +
@@ -1793,6 +1819,7 @@ namespace DeGuangTicketsHelper
             int numResult;
             if (int.TryParse(result,out numResult)==false)
             {
+                Dictionary<string, string> jsInfos = getJsInfo(result);
                 result = CommUitl.ReplaceHTMLAttributes(result);
                 string[] ticketInfoStrs = result.Split(new string[] { "\\n" }, StringSplitOptions.RemoveEmptyEntries);
                 string[] ticketInfos;
@@ -1803,7 +1830,7 @@ namespace DeGuangTicketsHelper
                     ticketInfos = ticketInfoStrs[i].Split(',');
                     ticketInfo = new TicketInfo();
                     ticketInfo.ID = Convert.ToInt32(ticketInfos[0]);
-                    ticketInfo.TrainNo = ticketInfos[1];
+                    ticketInfo.StationTrainCode = ticketInfos[1];
                     stations = ticketInfos[2].Replace("  ", " ").Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                     ticketInfo.DepartureStation = stations[0];
                     ticketInfo.DrivingTime = stations[1];
@@ -1828,10 +1855,33 @@ namespace DeGuangTicketsHelper
                     ticketInfo.HardSeat = ticketInfos[13];
                     ticketInfo.NoSeat = ticketInfos[14];
                     ticketInfo.Other = ticketInfos[15];
+                    ticketInfo.JsInfoString = jsInfos[ticketInfo.StationTrainCode];
                     ticketInfoList.Add(ticketInfo);
                 }
             }
             return ticketInfoList;
+        }
+
+        /// <summary>
+        /// 得到预订按钮对应的JS提交信息
+        /// </summary>
+        /// <param name="webResult"></param>
+        /// <returns></returns>
+        private static Dictionary<string,string> getJsInfo(string webResult)
+        {
+            string[] tmpRsult;
+            Dictionary<string,string> result=new Dictionary<string,string>();
+            string jsInfo;
+            tmpRsult = webResult.Split(new string[] { "javascript:getSelected('" }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < tmpRsult.Length; i++)
+            {
+                if (tmpRsult[i].IndexOf("') value='预订'") > -1)
+                {
+                    jsInfo = tmpRsult[i].Split(new string[] { "') value='预订'" }, StringSplitOptions.RemoveEmptyEntries)[0];
+                    result.Add(jsInfo.Split('#')[0], jsInfo);
+                }
+            }
+            return result;
         }
 
         /// <summary>
@@ -1899,31 +1949,52 @@ namespace DeGuangTicketsHelper
         #region 根据出发站及到站行李相应的列车信息
         private void cboTrainNumber_Enter(object sender, EventArgs e)
         {
-            if (trainNumbers.Count <=1)
+            Cursor.Current = Cursors.WaitCursor;
+            try
             {
-                if (cboDepartureStation.SelectedValue == null)
+                if (trainNumbers.Count <= 1)
                 {
-                    MessageBox.Show("请选择出发站!", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    if (cboDepartureStation.SelectedValue == null)
+                    {
+                        MessageBox.Show("请选择出发站!", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else if (cboDestinationStation.SelectedValue == null)
+                    {
+                        MessageBox.Show("请选择目的站!", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        string url = "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=queryststrainall";
+                        List<KeyValuePair<string, string>> postData = new List<KeyValuePair<string, string>>();
+                        postData.Add(new KeyValuePair<string, string>("date", dtpDepartureDate.Value.ToString("yyyy-MM-dd")));
+                        postData.Add(new KeyValuePair<string, string>("fromstation", cboDepartureStation.SelectedValue.ToString()));
+                        postData.Add(new KeyValuePair<string, string>("tostation", cboDestinationStation.SelectedValue.ToString()));
+                        postData.Add(new KeyValuePair<string, string>("starttime", cboDepartureTime.SelectedValue.ToString()));
+                        string webResult = CommUitl.postString(url, postData, null, null, Encoding.UTF8, CommData.cookieCollection, "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=init");
+
+                        string message = getMessage(webResult);
+                        if (string.IsNullOrEmpty(message) == false)
+                        {
+                            MessageBox.Show(message);
+                        }
+                        else
+                        {
+                            trainNumbers = getTrainNumber(webResult);
+                            cboTrainNumber.DataSource = null;
+                            cboTrainNumber.DataSource = trainNumbers;
+                            cboTrainNumber.ValueMember = "key";
+                            cboTrainNumber.DisplayMember = "value";
+                        }
+                    }
                 }
-                else if (cboDestinationStation.SelectedValue == null)
-                {
-                    MessageBox.Show("请选择目的站!", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    string url = "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=queryststrainall";
-                    Dictionary<string, string> postData = new Dictionary<string, string>();
-                    postData.Add("date", dtpDepartureDate.Value.ToString("yyyy-MM-dd"));
-                    postData.Add("fromstation", cboDepartureStation.SelectedValue.ToString());
-                    postData.Add("tostation", cboDestinationStation.SelectedValue.ToString());
-                    postData.Add("starttime", cboDepartureTime.SelectedValue.ToString());
-                    string webResult = CommUitl.postString(url, postData, null, null, Encoding.UTF8, CommData.cookieCollection, "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=init");
-                    trainNumbers = getTrainNumber(webResult);
-                    cboTrainNumber.DataSource = null;
-                    cboTrainNumber.DataSource = trainNumbers;
-                    cboTrainNumber.ValueMember = "key";
-                    cboTrainNumber.DisplayMember = "value";
-                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            finally
+            {
+                Cursor.Current = Cursors.Default;
             }
         }
 
@@ -2010,5 +2081,677 @@ namespace DeGuangTicketsHelper
         {
             System.Diagnostics.Process.Start("http://www.9inf.com");
         }
+
+        #region 预订
+        //javascript:getSelected('2252#00:23#10:50#12000022580I#TAP#BJP#11:13#通州西#北京#1000700174300580000340083000141000703491')
+        //function getSelected(selectStr) {
+        //var selectStr_arr = selectStr.split("#");
+        //var station_train_code=selectStr_arr[0];
+        //var lishi=selectStr_arr[1];
+        //var starttime=selectStr_arr[2];
+        //var trainno=selectStr_arr[3];
+        //var from_station_telecode=selectStr_arr[4];
+        //var to_station_telecode=selectStr_arr[5];
+        //var arrive_time=selectStr_arr[6];
+        //var from_station_name=selectStr_arr[7];
+        //var to_station_name=selectStr_arr[8];
+        //var ypInfoDetail=selectStr_arr[9];
+        //var flag = true;
+        //if (checkBeyondMixTicketNum()) {
+        //flag = false;
+        //return;
+        //}
+        //// 该方法在各个页面中分别书写，因为根据页面的不同行为不同，相当于重写
+        //if (flag) {
+        //submitRequest(station_train_code,lishi,starttime,trainno,from_station_telecode,to_station_telecode,arrive_time,from_station_name,to_station_name,ypInfoDetail);
+        //} 
+
+        //station_train_code	L43
+        //train_date	2012-01-15
+        //seattype_num	
+        //from_station_telecode	BXP
+        //to_station_telecode	CSQ
+        //include_student	00
+        //from_station_telecode_name	北京
+        //to_station_telecode_name	长沙
+        //round_train_date	2012-01-05
+        //round_start_time_str	00:00--24:00
+        //single_round_type	1
+        //train_pass_type	QB
+        //train_class_arr	QB#D#Z#T#K#QT#
+        //start_time_str	00:00--24:00
+        //lishi	20:19
+        //train_start_time	02:23
+        //trainno	2400000L430A
+        //arrive_time	22:42
+        //from_station_name	北京西
+        //to_station_name	长沙
+        //ypInfoDetail	101680000120278000001016803666
+
+        string token;
+
+        private void booking(TicketInfo ticketInfo)
+        {
+            // 得到验证码路径  https://dynamic.12306.cn/otsweb/passCodeAction.do?rand=randp
+
+            List<KeyValuePair<string, string>> postData = new List<KeyValuePair<string, string>>();
+            postData.Add(new KeyValuePair<string,string>("station_train_code", ticketInfo.StationTrainCode));
+            postData.Add(new KeyValuePair<string,string>("train_date", DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")));
+            postData.Add(new KeyValuePair<string,string>("seattype_num", string.Empty));
+            postData.Add(new KeyValuePair<string,string>("from_station_telecode", ticketInfo.DepartureStationTelCode));
+            postData.Add(new KeyValuePair<string,string>("to_station_telecode", ticketInfo.DestinationStationTelCode));
+            postData.Add(new KeyValuePair<string,string>("include_student", "00"));
+            postData.Add(new KeyValuePair<string,string>("from_station_telecode_name", ticketInfo.DepartureStation));
+            postData.Add(new KeyValuePair<string,string>("to_station_telecode_name", ticketInfo.DestinationStation));
+            postData.Add(new KeyValuePair<string,string>("round_train_date", DateTime.Now.ToString("yyyy-MM-dd")));
+            postData.Add(new KeyValuePair<string,string>("round_start_time_str", "00:00--24:00"));
+            //单程 1 返程 2
+            postData.Add(new KeyValuePair<string,string>("single_round_type", "1"));
+            postData.Add(new KeyValuePair<string,string>("train_pass_type", "QB"));
+            postData.Add(new KeyValuePair<string,string>("train_class_arr", "QB#D#Z#T#K#QT#"));
+            postData.Add(new KeyValuePair<string,string>("start_time_str", "00:00--24:00"));
+            postData.Add(new KeyValuePair<string,string>("lishi", ticketInfo.ElapsedTime));
+            postData.Add(new KeyValuePair<string,string>("train_start_time", ticketInfo.DrivingTime));
+            postData.Add(new KeyValuePair<string,string>("trainno", ticketInfo.TrainNo));
+            postData.Add(new KeyValuePair<string,string>("arrive_time", ticketInfo.ArrivalTime));
+            postData.Add(new KeyValuePair<string,string>("from_station_name", ticketInfo.DepartureStation));
+            postData.Add(new KeyValuePair<string,string>("to_station_name", ticketInfo.DestinationStation));
+            postData.Add(new KeyValuePair<string,string>("ypInfoDetail", ticketInfo.InfoDetail));
+            //// 列车编号
+            //param.Add(new KeyValuePair<string,string>("station_train_code", ticketInfo.StationTrainCode);
+            //// 列车编号
+            //param.Add(new KeyValuePair<string,string>("train_date", DateTime.Now.ToString("yyyy-MM-dd"));
+            //param.Add(new KeyValuePair<string,string>("seattype_num", string.Empty);
+            //// 出发站编号
+            //param.Add(new KeyValuePair<string,string>("from_station_telecode", ticketInfo.DepartureStationTelCode);
+            //// 到站编号
+            //param.Add(new KeyValuePair<string,string>("to_station_telecode", ticketInfo.DestinationStationTelCode);
+            //// 学生票
+            //param.Add(new KeyValuePair<string,string>("include_student", "00");
+            //// 到站
+            //param.Add(new KeyValuePair<string,string>("to_station_telecode_name", ticketInfo.DestinationStation);
+            //// 返程日期
+            //param.Add(new KeyValuePair<string,string>("round_train_date", DateTime.Now.ToString("yyyy-MM-dd"));
+            //// 发站
+            //param.Add(new KeyValuePair<string,string>("from_station_name", ticketInfo.DepartureStation);
+            //// 到站
+            //param.Add(new KeyValuePair<string,string>("to_station_name", ticketInfo.DestinationStation);
+            //// 返程时间段
+            //param.Add(new KeyValuePair<string,string>("round_start_time_str", "00:00--24:00");
+            ////单程 1 返程 2
+            //param.Add(new KeyValuePair<string,string>("single_round_type", "1");
+            //// 列车路过的类型
+            //param.Add(new KeyValuePair<string,string>("train_pass_type", "QB");
+            //// 座位类型
+            //param.Add(new KeyValuePair<string,string>("train_class_arr", "QB#D#Z#T#K#QT#");
+            //// 时间段
+            //param.Add(new KeyValuePair<string,string>("start_time_str", "00:00--24:00");
+            //// 历时
+            //param.Add(new KeyValuePair<string,string>("lishi", ticketInfo.ElapsedTime);
+            //// 开车时间
+            //param.Add(new KeyValuePair<string,string>("train_start_time", ticketInfo.DrivingTime);
+            //// 列车编号
+            //param.Add(new KeyValuePair<string,string>("trainno", ticketInfo.TrainNo);
+            //// 到达时间
+            //param.Add(new KeyValuePair<string,string>("arrive_time", ticketInfo.ArrivalTime);
+            //// 
+            //param.Add(new KeyValuePair<string,string>("ypInfoDetail", ticketInfo.InfoDetail);
+            try
+            {
+                string webResult = CommUitl.postString(submutOrderRequestUrl, postData, null, null, Encoding.UTF8, CommData.cookieCollection, "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=init");
+                string message = getMessage(webResult);
+                if (string.IsNullOrEmpty(message) == false)
+                {
+                    MessageBox.Show(message);
+                }
+                else
+                {
+                    initFlpPassenger(getPassenger(webResult));
+                    token = getToken(webResult);
+                    rtbTrainInfo.Text = getTicketInfo(webResult);
+                    //string webResult1 = CommUitl.getString("https://dynamic.12306.cn/otsweb/order/confirmPassengerAction.do?method=init", CommData.cookieContainer, "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=init");
+                    //列车信息
+//webResult.IndexOf("#F3F8FC",0)
+//8100
+//webResult.Substring(8100,100)
+//"#F3F8FC\">\r\n\t\t\t\t<td class=\"bluetext\">2012年03月04日</td>\r\n\t\t\t\t<td class=\"bluetext\">6417次</td>\r\n\t\t\t\t<td c"
+//webResult.IndexOf("以上余票信息随时发生变化，仅作参考",8100)
+//8517
+//webResult.Substring(8100,417)
+//"#F3F8FC\">\r\n\t\t\t\t<td class=\"bluetext\">2012年03月04日</td>\r\n\t\t\t\t<td class=\"bluetext\">6417次</td>\r\n\t\t\t\t<td class=\"bluetext\">北京（16:22 开 ）</td>\r\n\t\t\t\t<td class=\"bluetext\">通州西（16:50到 ）</td>\r\n\t\t\t\t\r\n\t\t\t\t<td class=\"bluetext\">历时（00:28）</td>\r\n\t\t\t</tr>\r\n         \r\n            \r\n\t\t\t\r\n\t\t\t    <tr>\r\n\t\t\t\r\n\t\t\t\t<td>硬座(1.50元)有票</td>\r\n\t\t\r\n            \r\n\t\t\t\r\n\t\t\t\t<td>无座(1.50元)有票</td>\r\n\t\t\r\n\t\t</tr>\r\n\t\t\t<tr>\r\n\t\t\t\t<td colspan=\"5\" class=\"redtext\">"
+//CommUitl.ReplaceHTMLAttributes(webResult.Substring(8100,417))
+//"#F3F8FC\">\r\n\t\t\t\t2012年03月04日\r\n\t\t\t\t6417次\r\n\t\t\t\t北京（16:22 开 ）\r\n\t\t\t\t通州西（16:50到 ）\r\n\t\t\t\t\r\n\t\t\t\t历时（00:28）\r\n\t\t\t\r\n         \r\n            \r\n\t\t\t\r\n\t\t\t    \r\n\t\t\t\r\n\t\t\t\t硬座(1.50元)有票\r\n\t\t\r\n            \r\n\t\t\t\r\n\t\t\t\t无座(1.50元)有票\r\n\t\t\r\n\t\t\r\n\t\t\t\r\n\t\t\t\t"
+
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "异常", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        private string getTicketInfo(string webResult)
+        {
+            string result = string.Empty;
+            int startInt;
+            string keyword="<tr style=\"background-color:#F3F8FC\">";
+            startInt = webResult.IndexOf(keyword);
+            if (startInt > -1)
+            {
+                startInt+=keyword.Length;
+                int endInt;
+                endInt = webResult.IndexOf("以上余票信息随时发生变化，仅作参考", startInt);
+                result = webResult.Substring(startInt, endInt);
+                result = CommUitl.ReplaceHTMLAttributes(webResult.Substring(startInt, endInt - startInt)).Replace("\r\n", string.Empty).Replace("\t", string.Empty);
+                Regex re = new Regex(@"[/s]{2,}", RegexOptions.Compiled);
+                result = Regex.Replace(result.Trim(), "\\s+", " ");
+            }
+            return result;
+        }
+        #endregion
+
+        /// <summary>
+        /// 得到Token
+        /// </summary>
+        /// <param name="webResult"></param>
+        /// <returns></returns>
+        private string getToken(string webResult)
+        {
+            string result = string.Empty;
+            int startInd;
+            int endInd;
+            if (webResult.IndexOf("TOKEN\" value=") > -1)
+            {
+                startInd = webResult.IndexOf("TOKEN\" value=") + "TOKEN\" value=".Length + 1;
+                endInd = webResult.IndexOf("\"></div>", startInd);
+                if (startInd > -1)
+                {
+                    result = webResult.Substring(startInd, endInd - startInd);
+                }
+            }
+            return result;
+        }
+
+        private void dgvTiketInfo_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            int selectedRowsIndex = e.RowIndex;
+            bookSelectedTiket(selectedRowsIndex);
+        }
+
+        private void bookSelectedTiket(int selectedRowsIndex)
+        {
+            Cursor.Current = Cursors.WaitCursor;
+            try
+            {
+                TicketInfo ticketInfo = dgvTiketInfo.Rows[selectedRowsIndex].DataBoundItem as TicketInfo;
+                booking(ticketInfo);
+                //getVerificationCode();
+                initDgvOrderSeatType(ticketInfo);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            finally
+            {
+                Cursor.Current = Cursors.Default;
+            }
+        }
+
+        private void initDgvOrderSeatType(TicketInfo ticket)
+        {
+            DataGridViewComboBoxColumn dgvcbcSeatType;
+            dgvcbcSeatType = dgvOrder.Columns["dgvcbcSeatType"] as DataGridViewComboBoxColumn;
+            dgvcbcSeatType.DataSource = getSeatTypies(ticket);
+        }
+
+        private void getVerificationCode()
+        {
+            // 得到验证码
+            try
+            {
+                picVerificationCode.Image = CommUitl.getVerificationCode("https://dynamic.12306.cn/otsweb/passCodeAction.do?rand=randp", CommData.cookieContainer, CommData.cookieCollection);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+        #region 得到旅客信息
+        private List<Passenger> getPassenger(string webResult)
+        {
+            if (passengers == null)
+            {
+                passengers = new List<Passenger>();
+                if (webResult.IndexOf("passengerJson") > -1)
+                {
+                    webResult = webResult.Split(new string[] { "passengerJson = " }, StringSplitOptions.RemoveEmptyEntries)[1].Split(new string[] { "var ticketTypeReserveFlags" }, StringSplitOptions.RemoveEmptyEntries)[0];
+                    webResult = CommUitl.ReplaceHTMLAttributes(webResult);
+                    webResult = webResult.Replace("[", string.Empty);
+                    webResult = webResult.Replace("]", string.Empty);
+                    string[] strPasserngers = webResult.Split(new string[] { "},{" }, StringSplitOptions.RemoveEmptyEntries);
+                    Passenger passenger;
+                    string[] passengerProperties;
+                    string strPassernger1;
+                    foreach (var strPassernger in strPasserngers)
+                    {
+                        passenger = new Passenger();
+                        strPassernger1 = strPassernger.Replace("\"", string.Empty);
+                        passengerProperties = strPassernger1.Split(',');
+                        passenger.MobileNo = passengerProperties[2].Split(':')[1];
+                        passenger.CardNo = passengerProperties[6].Split(':')[1];
+                        passenger.IDCardType = passengerProperties[7].Split(':')[1];
+                        passenger.Name = passengerProperties[9].Split(':')[1];
+                        passengers.Add(passenger);
+                    }
+                }
+            }
+            return passengers;
+        }
+        #endregion
+
+        #region 增加旅客信息至界面
+        private void initFlpPassenger()
+        {
+            Button btnLoadPassengers = new Button();
+            btnLoadPassengers.Name = "btnLoadPassengers";
+            btnLoadPassengers.Text = "加载乘客资料";
+            btnLoadPassengers.AutoSize = true;
+            btnLoadPassengers.Click += new EventHandler(btnLoadPassengers_Click);
+            flpPassenger.Controls.Add(btnLoadPassengers);
+        }
+
+        void btnLoadPassengers_Click(object sender, EventArgs e)
+        {
+            if (dgvTiketInfo.SelectedCells.Count > 0)
+            {
+                bookSelectedTiket(dgvTiketInfo.SelectedCells[0].RowIndex);
+            }
+            else
+            {
+                MessageBox.Show("请选择需要乘坐的列车!");
+            }
+        }
+        private void initFlpPassenger(List<Passenger> passengers)
+        {
+            Control control;
+            for (int i = flpPassenger.Controls.Count-1; i >=0; i--)
+            {
+                control = flpPassenger.Controls[i];
+                if (control is CheckBox || control.Name == "btnLoadPassengers")
+                {
+                    flpPassenger.Controls.Remove(control);
+                }
+            }
+            foreach (var passenger in passengers)
+            {
+                CheckBox chkbox = new CheckBox();
+                chkbox.Name = "chk" + passenger.CardNo;
+                chkbox.Text = passenger.Name;
+                chkbox.Tag = passenger;
+                chkbox.AutoSize = true;
+                chkbox.CheckedChanged += new EventHandler(chkbox_CheckedChanged);
+                flpPassenger.Controls.Add(chkbox);
+            }
+        }
+
+        void chkbox_CheckedChanged(object sender, EventArgs e)
+        {
+            CheckBox chkbox = sender as CheckBox;
+            Passenger passenger = chkbox.Tag as Passenger;
+            if (chkbox.Checked == true)
+            {
+                ordersPassengers.Add(passenger);
+                //Orders.Passengers.Add(passenger);
+            }
+            else
+            {
+                ordersPassengers.Remove(passenger);
+                //Orders.Passengers.Remove(passenger);
+            }
+        }
+        #endregion
+
+        private void btnSubmitOrder_Click(object sender, EventArgs e)
+        {
+            List<Passenger> passengers = getPassenger();
+            Orders.Passengers = passengers;
+            Orders.TicketInfo = dgvTiketInfo.Rows[dgvTiketInfo.SelectedCells[0].RowIndex].DataBoundItem as TicketInfo;
+            Orders.Token = Token;
+            Token = string.Empty;
+            Orders.TrainDate = dtpDepartureDate.Value.ToString("yyyy-MM-dd");
+            try
+            {
+                string webResult = submitOrder(Orders, txtVerificationCode.Text);
+                string message = getMessage(webResult);
+                if (string.IsNullOrEmpty(message) == false)
+                {
+                    MessageBox.Show(message);
+                }
+                else if (webResult.IndexOf("席位已成功锁定")>-1)
+                {
+                    MessageBox.Show("恭喜，您预订的席位已成功锁定!请在新开启的IE浏览器中进行支付!","恭喜",  MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1);
+                    openIE();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "异常", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            }
+        }
+
+        private void openIE()
+        {
+            foreach (Cookie cookie in CommData.cookieContainer.GetCookies(new Uri("https://dynamic.12306.cn/otsweb/loginAction.do?method=login")))
+            {
+                InternetSetCookie(
+                    "https://" + cookie.Domain.ToString(),
+                    cookie.Name.ToString(),
+                    cookie.Value.ToString() + ";expires=Sun,22-Feb-2099 00:00:00 GMT");
+            }
+            string url="https://dynamic.12306.cn/otsweb/";
+            System.Diagnostics.Process.Start("IExplore.exe", url); 
+        }
+
+        private List<Passenger> getPassenger()
+        {
+            List<Passenger> result=new List<Passenger>();
+            //CheckBox checkBox;
+            //foreach (var item in flpPassenger.Controls)
+            //{
+            //    if (item is CheckBox)
+            //    {
+            //        checkBox = item as CheckBox;
+            //        if (checkBox.Checked == true)
+            //        {
+            //            result.Add(checkBox.Tag as Passenger);
+            //        }
+            //    }
+            //}
+            foreach (var passenger in ordersPassengers)
+            {
+                result.Add(passenger);
+            }
+            return result;
+        }
+
+        private string Token
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(token) == true)
+                {
+                    token=getToken(CommUitl.getString(submutOrderRequestUrl, CommData.cookieContainer));
+                    Debug.Write("Token:" + token);
+                }
+                return token;
+            }
+            set
+            {
+                token = value;
+            }
+        }
+
+        /// <summary>
+        /// 提交订单
+        /// </summary>
+        /// <param name="order"></param>
+        /// <param name="randCode"></param>
+        private string submitOrder(OrderInfo order, string randCode)
+        {
+            string result=string.Empty;
+            string url = "https://dynamic.12306.cn/otsweb/order/confirmPassengerAction.do?method=confirmPassengerInfoSingle";
+            List<KeyValuePair<string, string>> postData = new List<KeyValuePair<string, string>>();
+            postData.Add(new KeyValuePair<string,string>("org.apache.struts.taglib.html.TOKEN", order.Token));
+            postData.Add(new KeyValuePair<string,string>("textfield", "中文或拼音首字母"));
+            postData.Add(new KeyValuePair<string,string>("checkbox0", "0"));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.train_date", order.TrainDate));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.train_no", order.TicketInfo.TrainNo));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.station_train_code", order.TicketInfo.StationTrainCode));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.from_station_telecode", order.TicketInfo.DepartureStationTelCode));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.to_station_telecode", order.TicketInfo.DestinationStationTelCode));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.seat_type_code", ""));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.ticket_type_order_num", ""));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.bed_level_order_num", "000000000000000000000000000000"));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.start_time", order.TicketInfo.DrivingTime));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.end_time", order.TicketInfo.ArrivalTime));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.from_station_name", order.TicketInfo.DepartureStation));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.to_station_name", order.TicketInfo.DestinationStation));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.cancel_flag", "1"));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.id_mode", "Y"));
+            Passenger passenger;
+            for (int i = 0; i < 5; i++)
+            {
+                passenger = null;
+                if (i < order.Passengers.Count)
+                {
+                    passenger = order.Passengers[i];
+                    postData.Add(new KeyValuePair<string,string>("passengerTickets", passenger.PassengerTickets));
+                    postData.Add(new KeyValuePair<string,string>("oldPassengers", passenger.OldPassengers));
+                    postData.Add(new KeyValuePair<string,string>("passenger_"+(i+1)+"_seat", passenger.SeatType));
+                    postData.Add(new KeyValuePair<string,string>("passenger_"+(i+1)+"_ticket", passenger.PassengerTicket));
+                    postData.Add(new KeyValuePair<string,string>("passenger_"+(i+1)+"_name",passenger.Name));
+                    postData.Add(new KeyValuePair<string,string>("passenger_"+(i+1)+"_cardtype", passenger.IDCardType));
+                    postData.Add(new KeyValuePair<string,string>("passenger_"+(i+1)+"_cardno", passenger.CardNo));
+                    postData.Add(new KeyValuePair<string,string>("passenger_"+(i+1)+"_mobileno", passenger.MobileNo));
+                    postData.Add(new KeyValuePair<string,string>("checkbox9", "Y"));
+                }
+                else
+                {
+                    postData.Add(new KeyValuePair<string,string>("oldPassengers", string.Empty));
+                    postData.Add(new KeyValuePair<string,string>("checkbox9", "Y"));
+                }
+            }
+            postData.Add(new KeyValuePair<string,string>("randCode", randCode));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.reserve_flag", "A"));
+
+            result= CommUitl.postString(url, postData, null, null, Encoding.UTF8, CommData.cookieCollection, "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=init");
+            return result;
+        }
+
+        private void initDgvOrder()
+        {
+            dgvOrder.AutoGenerateColumns = false;
+
+            DataGridViewLinkColumn dgvlcDelete = new DataGridViewLinkColumn();
+            dgvlcDelete.UseColumnTextForLinkValue = true;
+            dgvlcDelete.Name = "dgvlcDelete";
+            dgvlcDelete.Text = "删除";
+            dgvlcDelete.HeaderText = string.Empty;
+            dgvlcDelete.Width = 100;
+
+            DataGridViewComboBoxColumn dgvcbcSeatType = new DataGridViewComboBoxColumn();
+            dgvcbcSeatType.Name = "dgvcbcSeatType";
+            dgvcbcSeatType.DataPropertyName = "SeatType";
+            dgvcbcSeatType.DataSource = getSeatTypies();
+            dgvcbcSeatType.ValueMember = "key";
+            dgvcbcSeatType.DisplayMember = "value";
+            dgvcbcSeatType.HeaderText = "席别";
+            dgvcbcSeatType.Width = 100;
+
+            DataGridViewComboBoxColumn dgvcbcPassengerTicket = new DataGridViewComboBoxColumn();
+            dgvcbcPassengerTicket.Name = "dgvcbcPassengerTicket";
+            dgvcbcPassengerTicket.DataPropertyName = "PassengerTicket";
+            dgvcbcPassengerTicket.DataSource = getPassengerTickets();
+            dgvcbcPassengerTicket.ValueMember = "key";
+            dgvcbcPassengerTicket.DisplayMember = "value";
+            dgvcbcPassengerTicket.HeaderText = "票种";
+            dgvcbcPassengerTicket.Width = 100;
+
+            DataGridViewTextBoxColumn dgvtbcName = new DataGridViewTextBoxColumn();
+            dgvtbcName.Name = "dgvtbcName";
+            dgvtbcName.DataPropertyName = "Name";
+            dgvtbcName.HeaderText = "姓名";
+            dgvtbcName.Width = 70;
+
+            DataGridViewComboBoxColumn dgvcbcIDCardType = new DataGridViewComboBoxColumn();
+            dgvcbcIDCardType.Name = "dgvcbcIDCardType";
+            dgvcbcIDCardType.DataPropertyName = "IDCardType";
+            dgvcbcIDCardType.DataSource = getIDCardTypies();
+            dgvcbcIDCardType.ValueMember = "key";
+            dgvcbcIDCardType.DisplayMember = "value";
+            dgvcbcIDCardType.HeaderText = "证件类型";
+            dgvcbcIDCardType.Width = 120;
+
+            DataGridViewTextBoxColumn dgvtbcCardNo = new DataGridViewTextBoxColumn();
+            dgvtbcCardNo.Name = "dgvtbcCardNo";
+            dgvtbcCardNo.DataPropertyName = "CardNo";
+            dgvtbcCardNo.HeaderText = "证件号码";
+            dgvtbcCardNo.Width = 120;
+
+            DataGridViewTextBoxColumn dgvtbcMobileNo = new DataGridViewTextBoxColumn();
+            dgvtbcMobileNo.Name = "dgvtbcMobileNo";
+            dgvtbcMobileNo.DataPropertyName = "MobileNo";
+            dgvtbcMobileNo.HeaderText = "手机号";
+            dgvtbcMobileNo.Width = 73;
+
+            dgvOrder.Columns.Add(dgvlcDelete);
+            dgvOrder.Columns.Add(dgvcbcSeatType);
+            dgvOrder.Columns.Add(dgvcbcPassengerTicket);
+            dgvOrder.Columns.Add(dgvtbcName);
+            dgvOrder.Columns.Add(dgvcbcIDCardType);
+            dgvOrder.Columns.Add(dgvtbcCardNo);
+            dgvOrder.Columns.Add(dgvtbcMobileNo);
+
+            dgvOrder.CellContentClick+=new DataGridViewCellEventHandler(dgvOrder_CellContentClick);
+            dgvOrder.RowsAdded += new DataGridViewRowsAddedEventHandler(dgvOrder_RowsAdded);
+            dgvOrder.RowsRemoved += new DataGridViewRowsRemovedEventHandler(dgvOrder_RowsRemoved);
+
+            dgvOrder.DataSource = ordersPassengers;
+        }
+
+        void dgvOrder_RowsRemoved(object sender, DataGridViewRowsRemovedEventArgs e)
+        {
+            autoChangeDgvOrderSize();
+        }
+
+        void dgvOrder_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
+        {
+            autoChangeDgvOrderSize();
+        }
+
+        void autoChangeDgvOrderSize()
+        {
+            tlpMain.RowStyles[5].Height = 28 * (dgvOrder.Rows.Count + 1);
+        }
+
+        private List<KeyValuePair<string, string>> getIDCardTypies()
+        {
+            List<KeyValuePair<string, string>> result;
+            result = new List<KeyValuePair<string, string>>();
+            result.Add(new KeyValuePair<string, string>("1", "二代身份证"));
+            result.Add(new KeyValuePair<string, string>("2", "一代身份证"));
+            result.Add(new KeyValuePair<string, string>("C", "港澳通行证"));
+            result.Add(new KeyValuePair<string, string>("G", "台湾通行证"));
+            result.Add(new KeyValuePair<string, string>("B", "护照"));
+
+            return result;            
+        }
+
+        /// <summary>
+        /// 乘客票类型 1 成人票 ;2 儿童票 ;3 学生票 ;4 残军票 
+        /// </summary>
+        /// <returns></returns>
+        private List<KeyValuePair<string, string>> getPassengerTickets()
+        {
+            List<KeyValuePair<string, string>> result;
+            result = new List<KeyValuePair<string, string>>();
+            result.Add(new KeyValuePair<string, string>("1", "成人票"));
+            result.Add(new KeyValuePair<string, string>("2", "儿童票"));
+            result.Add(new KeyValuePair<string, string>("3", "学生票"));
+            result.Add(new KeyValuePair<string, string>("4", "残军票"));
+            return result;
+        }
+
+        /// <summary>
+        /// 座位类型,1 硬座 ;3 硬卧;4 软卧 ;6 高级软卧;9 商务座  ;M 一等座 ;O 二等座 ;P 特等座
+        /// </summary>
+        /// <returns></returns>
+        private List<KeyValuePair<string, string>> getSeatTypies()
+        {
+            List<KeyValuePair<string, string>> result;
+            result = new List<KeyValuePair<string, string>>();
+            result.Add(new KeyValuePair<string, string>("-1", "无座"));
+            result.Add(new KeyValuePair<string, string>("1", "硬座"));
+            result.Add(new KeyValuePair<string, string>("2", "软座"));
+            result.Add(new KeyValuePair<string, string>("3", "硬卧"));
+            result.Add(new KeyValuePair<string, string>("4", "软卧"));
+            result.Add(new KeyValuePair<string, string>("6", "高级软卧"));
+            result.Add(new KeyValuePair<string, string>("9", "商务座"));
+            result.Add(new KeyValuePair<string, string>("M", "一等座"));
+            result.Add(new KeyValuePair<string, string>("O", "二等座"));
+            result.Add(new KeyValuePair<string, string>("P", "特等座"));
+            return result;
+        }
+
+        /// <summary>
+        /// 根据列车得到对应的座位信息
+        /// </summary>
+        /// <param name="ticket"></param>
+        /// <returns></returns>
+        private List<KeyValuePair<string, string>> getSeatTypies(TicketInfo ticket)
+        {
+            List<KeyValuePair<string, string>> result;
+            result = new List<KeyValuePair<string, string>>();
+            foreach (var item in ticket.SeetInfos)
+            {
+                if (CommData.SeatTypeNo.ContainsKey(item.Key) == true && CommData.SeatTypeName.ContainsKey(item.Key) == true)
+                {
+                    if (item.Value > 0)
+                    {
+                        result.Add(new KeyValuePair<string, string>(CommData.SeatTypeNo[item.Key], CommData.SeatTypeName[item.Key]));
+                    }
+                }
+            }
+            return result;
+        }
+
+        void dgvOrder_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.ColumnIndex == 0)
+            {
+                dgvOrder.Rows.RemoveAt(e.RowIndex);
+            }
+        }
+
+        OrderInfo Orders
+        {
+            get
+            {
+                if (orders == null)
+                {
+                    orders = new OrderInfo();
+                }
+                return orders;
+            }
+            set
+            {
+                orders = value;
+            }
+        }
+
+        private void picVerificationCode_Click(object sender, EventArgs e)
+        {
+            getVerificationCode();
+        }
+
+        private string getMessage(string webResult)
+        {
+            string result = string.Empty;
+            string keyword="var message = \"";
+            int startInt = webResult.IndexOf(keyword, 0);
+            if (startInt > -1)
+            {
+                startInt += keyword.Length; ;
+                int endInt = webResult.IndexOf("\";", startInt);
+                result = webResult.Substring(startInt, endInt - startInt);
+            }
+            return result;
+        }
+
     }
 }

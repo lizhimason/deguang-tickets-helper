@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Web;
 using System.IO.Compression;
+using System.Collections.Specialized;
 
 namespace DeGuangTicketsHelper
 {
@@ -168,39 +169,15 @@ namespace DeGuangTicketsHelper
             sleep();
             count++;
             string url = "https://dynamic.12306.cn/otsweb/passCodeAction.do?rand=lrand";
-            HttpWebRequest request2 = HttpWebResponseUtility.CreateGetHttpResponse(url, cookieContainer, "https://dynamic.12306.cn/otsweb/loginAction.do?method=login");
-            HttpWebResponse response = null;
+            //HttpWebRequest request2 = HttpWebResponseUtility.CreateGetHttpResponse(url, cookieContainer, "https://dynamic.12306.cn/otsweb/loginAction.do?method=login");
+            //HttpWebResponse response = null;
             try
             {
-                response = (HttpWebResponse)request2.GetResponse();
-            }
-            catch (Exception ex)
-            {
-                //MessageBox.Show("连接12306.cn网站出错!","异常", MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
-                this.Invoke(this.showMsgDelegate, "取得验证码失败:" + ex.Message);
-                getVerificationCode();
-            }
-            if (response != null)
-            {
-                Stream responseStream = response.GetResponseStream();
-
-                response.Cookies = request2.CookieContainer.GetCookies(new Uri(url));
-
-                cookieCollection = response.Cookies;
-
-                if (string.IsNullOrEmpty(cookieStr) == true)
-                {
-                    cookieStr = response.Headers.Get("Set-Cookie");
-                }
-                cookieContainer.SetCookies(new Uri(url), cookieStr);
-
-                Image original = Image.FromStream(responseStream);
-
-                picValidImg.Image = original;
-
+                picValidImg.Image = CommUitl.getVerificationCode(url, cookieContainer, cookieCollection);
+                //response = (HttpWebResponse)request2.GetResponse();
                 this.Invoke(this.showMsgDelegate, "取得验证码成功!");
 
-                this.Invoke(setControlTextDelegate, new object[] { btnLogin, "登录" ,true});
+                this.Invoke(setControlTextDelegate, new object[] { btnLogin, "登录", true });
 
                 endTime = DateTime.Now;
 
@@ -210,9 +187,48 @@ namespace DeGuangTicketsHelper
                 {
                     MessageBox.Show("12306不给力啊!!!尝试了" + count + "次用了" + getTimeSpanString(timeSpan) + "后才得到验证码图片.", "德广火车票助手 温馨提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     this.Invoke(activateDelegate);
-                    this.Invoke(shareToWeiboDelegate, new object[] { "12306不给力啊,登录页面尝试了"+count+"次用了"+getTimeSpanString(timeSpan)+"后,才显示出来.还好有#德广火车票助手#帮助,不然就鼠标键盘就被我按报废啦!" });
+                    this.Invoke(shareToWeiboDelegate, new object[] { "12306不给力啊,登录页面尝试了" + count + "次用了" + getTimeSpanString(timeSpan) + "后,才显示出来.还好有#德广火车票助手#帮助,不然就鼠标键盘就被我按报废啦!" });
                 }
             }
+            catch (Exception ex)
+            {
+                //MessageBox.Show("连接12306.cn网站出错!","异常", MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
+                this.Invoke(this.showMsgDelegate, "取得验证码失败:" + ex.Message);
+                getVerificationCode();
+            }
+            //if (response != null)
+            //{
+            //    Stream responseStream = response.GetResponseStream();
+
+            //    response.Cookies = request2.CookieContainer.GetCookies(new Uri(url));
+
+            //    cookieCollection = response.Cookies;
+
+            //    if (string.IsNullOrEmpty(cookieStr) == true)
+            //    {
+            //        cookieStr = response.Headers.Get("Set-Cookie");
+            //    }
+            //    cookieContainer.SetCookies(new Uri(url), cookieStr);
+
+            //    Image original = Image.FromStream(responseStream);
+
+            //    picValidImg.Image = original;
+
+            //    this.Invoke(this.showMsgDelegate, "取得验证码成功!");
+
+            //    this.Invoke(setControlTextDelegate, new object[] { btnLogin, "登录" ,true});
+
+            //    endTime = DateTime.Now;
+
+            //    timeSpan = endTime.Subtract(beginTime);
+
+            //    if (count > 1)
+            //    {
+            //        MessageBox.Show("12306不给力啊!!!尝试了" + count + "次用了" + getTimeSpanString(timeSpan) + "后才得到验证码图片.", "德广火车票助手 温馨提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            //        this.Invoke(activateDelegate);
+            //        this.Invoke(shareToWeiboDelegate, new object[] { "12306不给力啊,登录页面尝试了"+count+"次用了"+getTimeSpanString(timeSpan)+"后,才显示出来.还好有#德广火车票助手#帮助,不然就鼠标键盘就被我按报废啦!" });
+            //    }
+            //}
         }
 
         /// <summary>
@@ -380,13 +396,14 @@ namespace DeGuangTicketsHelper
                 //requestStream.Write(postBytes, 0, postBytes.Length);
                 //requestStream.Close();
 
-                Dictionary<string, string> param = new Dictionary<string, string>();
-                param.Add("loginUser.user_name", txtUserName.Text);
-                param.Add("nameErrorFocus", string.Empty);
-                param.Add("user.password", txtPassword.Text);
-                param.Add("passwordErrorFocus", string.Empty);
-                param.Add("randCode", txtVerificationCode.Text);
-                param.Add("randErrorFocus", "focus");
+                List<KeyValuePair<string, string>> param = new List<KeyValuePair<string, string>>();
+                
+                param.Add(new KeyValuePair<string,string>("loginUser.user_name", txtUserName.Text));
+                param.Add(new KeyValuePair<string,string>("nameErrorFocus", string.Empty));
+                param.Add(new KeyValuePair<string,string>("user.password", txtPassword.Text));
+                param.Add(new KeyValuePair<string,string>("passwordErrorFocus", string.Empty));
+                param.Add(new KeyValuePair<string,string>("randCode", txtVerificationCode.Text));
+                param.Add(new KeyValuePair<string,string>("randErrorFocus", "focus"));
 
                 HttpWebResponse response = null;
                 try
@@ -553,27 +570,29 @@ namespace DeGuangTicketsHelper
             {
                 System.Diagnostics.Process.Start("IExplore.exe", url); 
             }
-            else if (radDefaultWebBrowser.Checked == true)
+            else if (radDeGuangOrderMember.Checked == true)
             {
-                try
-                {
-                    System.Diagnostics.Process.Start(url);
-                }
-                catch(System.ComponentModel.Win32Exception noBrowser)
-                {
-                    if (noBrowser.ErrorCode == -2147467259)
-                    {
-                        MessageBox.Show("未找到您的默认Web浏览器!", "错误", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                        radTickerWebBrowser.Checked = true;
-                    }
-                }
-                catch (System.Exception other)
-                {
-                    MessageBox.Show(other.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                }
+                frmTicketQuery frmTicketQuery = new frmTicketQuery();
+                frmTicketQuery.Show();
+
+                // 使用默认浏览器打开,未完成
+                //try
+                //{
+                //    System.Diagnostics.Process.Start(url);
+                //}
+                //catch(System.ComponentModel.Win32Exception noBrowser)
+                //{
+                //    if (noBrowser.ErrorCode == -2147467259)
+                //    {
+                //        MessageBox.Show("未找到您的默认Web浏览器!", "错误", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                //        radTickerWebBrowser.Checked = true;
+                //    }
+                //}
+                //catch (System.Exception other)
+                //{
+                //    MessageBox.Show(other.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                //}
             }
-            frmTicketQuery frmTicketQuery = new frmTicketQuery();
-            frmTicketQuery.Show();
         }
 
         /// <summary>
