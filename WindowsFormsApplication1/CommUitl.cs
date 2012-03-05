@@ -9,6 +9,8 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.IO.Compression;
 using System.Web.UI;
+using System.Diagnostics;
+using System.Collections.Specialized;
 
 namespace DeGuangTicketsHelper
 {
@@ -68,21 +70,27 @@ namespace DeGuangTicketsHelper
             return getString(url, null);
         }
 
+        public static string getString(string url, CookieContainer cookieContainer)
+        {
+            return getString(url, cookieContainer, string.Empty);
+        }
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
-        public static string getString(string url,CookieContainer cookieContainer)
+        public static string getString(string url, CookieContainer cookieContainer, string referer)
         {
             string result=string.Empty;
-            HttpWebRequest request = HttpWebResponseUtility.CreateGetHttpResponse(url,cookieContainer);
+            HttpWebRequest request = HttpWebResponseUtility.CreateGetHttpResponse(url,cookieContainer,referer);
             HttpWebResponse response = null;
             try
             {
                 response = (HttpWebResponse)request.GetResponse();
 
                 result = getResponseString( response);
+                Debug.WriteLine(result);
             }
             catch (Exception ex)
             {
@@ -113,13 +121,14 @@ namespace DeGuangTicketsHelper
             return result;
         }
 
-        public static string postString(string url, IDictionary<string, string> parameters, int? timeout, string userAgent, Encoding requestEncoding, CookieCollection cookies,string referer)
+        public static string postString(string url, List<KeyValuePair<string,string>> parameters, int? timeout, string userAgent, Encoding requestEncoding, CookieCollection cookies, string referer)
         {
             string result = string.Empty;
             try
             {
                 HttpWebResponse response = HttpWebResponseUtility.CreatePostHttpResponse(url, parameters, timeout, userAgent, requestEncoding, cookies, referer);
                 result = getResponseString(response);
+                Debug.WriteLine(result);
             }
             catch (Exception ex)
             {
@@ -219,6 +228,40 @@ namespace DeGuangTicketsHelper
                 }
                 isCheckBox_Click = false;
             }
+        }
+
+        public static Image getVerificationCode(string url, CookieContainer cookieContainer, CookieCollection cookieCollection)
+        {
+            Image result = null;
+            HttpWebRequest request2 = HttpWebResponseUtility.CreateGetHttpResponse(url, cookieContainer, "https://dynamic.12306.cn/otsweb/loginAction.do?method=login");
+            HttpWebResponse response;
+            string cookieStr=string.Empty;
+            try
+            {
+                response = (HttpWebResponse)request2.GetResponse();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+            if (response != null)
+            {
+                Stream responseStream = response.GetResponseStream();
+
+                response.Cookies = request2.CookieContainer.GetCookies(new Uri(url));
+
+                cookieCollection = response.Cookies;
+
+                if (string.IsNullOrEmpty(cookieStr) == true)
+                {
+                    cookieStr = response.Headers.Get("Set-Cookie");
+                }
+                cookieStr = cookieStr ?? string.Empty;
+                cookieContainer.SetCookies(new Uri(url), cookieStr);
+
+                result = Image.FromStream(responseStream);
+            }
+            return result;
         }
     }
 }

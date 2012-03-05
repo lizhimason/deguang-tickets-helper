@@ -32,7 +32,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmTicketsHelper));
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.webBrowser1 = new System.Windows.Forms.WebBrowser();
-            this.radDefaultWebBrowser = new System.Windows.Forms.RadioButton();
+            this.radDeGuangOrderMember = new System.Windows.Forms.RadioButton();
             this.radIE = new System.Windows.Forms.RadioButton();
             this.radTickerWebBrowser = new System.Windows.Forms.RadioButton();
             this.lstMsg = new System.Windows.Forms.ListBox();
@@ -72,23 +72,24 @@
             this.toolTip1.SetToolTip(this.webBrowser1, "把您的使用心得分享给您的朋友吧!");
             this.webBrowser1.WebBrowserShortcutsEnabled = false;
             // 
-            // radDefaultWebBrowser
+            // radDeGuangOrderMember
             // 
-            this.radDefaultWebBrowser.AutoSize = true;
-            this.radDefaultWebBrowser.Enabled = false;
-            this.radDefaultWebBrowser.Location = new System.Drawing.Point(6, 61);
-            this.radDefaultWebBrowser.Name = "radDefaultWebBrowser";
-            this.radDefaultWebBrowser.Size = new System.Drawing.Size(107, 16);
-            this.radDefaultWebBrowser.TabIndex = 6;
-            this.radDefaultWebBrowser.Tag = "";
-            this.radDefaultWebBrowser.Text = "系统默认浏览器";
-            this.toolTip1.SetToolTip(this.radDefaultWebBrowser, "[暂不支持]您设定的系统默认Web浏览器");
-            this.radDefaultWebBrowser.UseVisualStyleBackColor = true;
+            this.radDeGuangOrderMember.AutoSize = true;
+            this.radDeGuangOrderMember.Checked = true;
+            this.radDeGuangOrderMember.Location = new System.Drawing.Point(6, 20);
+            this.radDeGuangOrderMember.Name = "radDeGuangOrderMember";
+            this.radDeGuangOrderMember.Size = new System.Drawing.Size(119, 16);
+            this.radDeGuangOrderMember.TabIndex = 6;
+            this.radDeGuangOrderMember.TabStop = true;
+            this.radDeGuangOrderMember.Tag = "";
+            this.radDeGuangOrderMember.Text = "德广订票器(推荐)";
+            this.toolTip1.SetToolTip(this.radDeGuangOrderMember, "[暂不支持]您设定的系统默认Web浏览器");
+            this.radDeGuangOrderMember.UseVisualStyleBackColor = true;
             // 
             // radIE
             // 
             this.radIE.AutoSize = true;
-            this.radIE.Location = new System.Drawing.Point(6, 39);
+            this.radIE.Location = new System.Drawing.Point(6, 64);
             this.radIE.Name = "radIE";
             this.radIE.Size = new System.Drawing.Size(71, 16);
             this.radIE.TabIndex = 5;
@@ -100,14 +101,12 @@
             // radTickerWebBrowser
             // 
             this.radTickerWebBrowser.AutoSize = true;
-            this.radTickerWebBrowser.Checked = true;
-            this.radTickerWebBrowser.Location = new System.Drawing.Point(6, 17);
+            this.radTickerWebBrowser.Location = new System.Drawing.Point(6, 42);
             this.radTickerWebBrowser.Name = "radTickerWebBrowser";
-            this.radTickerWebBrowser.Size = new System.Drawing.Size(119, 16);
+            this.radTickerWebBrowser.Size = new System.Drawing.Size(83, 16);
             this.radTickerWebBrowser.TabIndex = 4;
-            this.radTickerWebBrowser.TabStop = true;
             this.radTickerWebBrowser.Tag = "";
-            this.radTickerWebBrowser.Text = "内置浏览器(推荐)";
+            this.radTickerWebBrowser.Text = "内置浏览器";
             this.toolTip1.SetToolTip(this.radTickerWebBrowser, "德广火车票助手内置的浏览器");
             this.radTickerWebBrowser.UseVisualStyleBackColor = true;
             // 
@@ -202,7 +201,7 @@
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.radDefaultWebBrowser);
+            this.groupBox1.Controls.Add(this.radDeGuangOrderMember);
             this.groupBox1.Controls.Add(this.radIE);
             this.groupBox1.Controls.Add(this.radTickerWebBrowser);
             this.groupBox1.Location = new System.Drawing.Point(205, 96);
@@ -351,7 +350,7 @@
         private System.Windows.Forms.WebBrowser webBrowser1;
         private System.Windows.Forms.Button btnExit;
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.RadioButton radDefaultWebBrowser;
+        private System.Windows.Forms.RadioButton radDeGuangOrderMember;
         private System.Windows.Forms.RadioButton radIE;
         private System.Windows.Forms.RadioButton radTickerWebBrowser;
         private System.Windows.Forms.ListBox lstMsg;

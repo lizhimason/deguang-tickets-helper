@@ -20,7 +20,7 @@ namespace DeGuangTicketsHelper.Entity
         /// <summary>
         /// 车次
         /// </summary>
-        public string TrainNo { get; set; }
+        public string StationTrainCode { get; set; }
         /// <summary>
         /// 发站
         /// </summary>
@@ -46,7 +46,7 @@ namespace DeGuangTicketsHelper.Entity
         /// </summary>
         public Dictionary<SeatType, int> SeetInfos { get; set; }
 
-
+        #region 各类座位信息
         string businessBlock;
         /// <summary>
         /// 商务
@@ -256,9 +256,51 @@ namespace DeGuangTicketsHelper.Entity
                 }
             }
         }
+        #endregion
 
+        private string jsInfoString;
+        /// <summary>
+        /// 页面中预订按钮点击时JS包含的信息,用于预订车票 
+        /// javascript:getSelected('2102#01:07#09:02#150000210602#TAP#VAP#10:09#通州西#北京北#1001100276300620000340094000091001103424')
+        /// </summary>
+        public string JsInfoString
+        {
+            get
+            {
+                return jsInfoString;
+            }
+            set
+            {
+                if (jsInfoString != value)
+                {
+                    jsInfoString = value;
+                    string[] infos = jsInfoString.Split('#');
+                    TrainNo = infos[3];
+                    DepartureStationTelCode = infos[4];
+                    DestinationStationTelCode = infos[5];
+                    InfoDetail = infos[9];
+                }
+            }
+        }
 
-
+        #region 从jsInfo中得到的属性
+        /// <summary>
+        /// 列车编号
+        /// </summary>
+        public string TrainNo { get; set; }
+        /// <summary>
+        /// 发站编号
+        /// </summary>
+        public string DepartureStationTelCode { get; set; }
+        /// <summary>
+        /// 到站编号
+        /// </summary>
+        public string DestinationStationTelCode { get; set; }
+        /// <summary>
+        /// ypInfoDetail
+        /// </summary>
+        public string InfoDetail { get; set; }
+        #endregion
 
         /// <summary>
         /// 更新剩余票信息

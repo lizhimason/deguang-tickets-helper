@@ -6,6 +6,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Net.Security;
 using System.IO;
 using System.Diagnostics;
+using System.Collections.Specialized;
 
 namespace DeGuangTicketsHelper
 {
@@ -44,12 +45,26 @@ namespace DeGuangTicketsHelper
         /// <param name="url">请求的URL</param>  
         /// <param name="timeout">请求的超时时间</param>  
         /// <param name="userAgent">请求的客户端浏览器信息，可以为空</param>  
-        /// <param name="cookies">随同HTTP请求发送的Cookie信息，如果不需要身份验证可以为空</param>  
-        /// <returns></returns>  
-        public static HttpWebRequest CreateGetHttpResponse(string url,  CookieContainer cookieContainer, string referer)
+        /// <param name="cookieContainer">随同HTTP请求发送的Cookie信息，如果不需要身份验证可以为空</param>  
+        /// <param name="referer"></param>
+        /// <returns></returns> 
+        public static HttpWebRequest CreateGetHttpResponse(string url, CookieContainer cookieContainer,string referer)
         {
             return CreateGetHttpResponse(url, null, null, cookieContainer, referer);
         }
+
+        /// <summary>  
+        /// 创建GET方式的HTTP请求  
+        /// </summary>  
+        /// <param name="url">请求的URL</param>  
+        /// <param name="timeout">请求的超时时间</param>  
+        /// <param name="userAgent">请求的客户端浏览器信息，可以为空</param>  
+        /// <param name="cookies">随同HTTP请求发送的Cookie信息，如果不需要身份验证可以为空</param>  
+        /// <returns></returns>  
+        //public static HttpWebRequest CreateGetHttpResponse(string url,  CookieContainer cookieContainer, string referer)
+        //{
+        //    return CreateGetHttpResponse(url, null, null, cookieContainer, referer);
+        //}
         
         /// <summary>  
         /// 创建GET方式的HTTP请求  
@@ -123,7 +138,7 @@ namespace DeGuangTicketsHelper
         /// <param name="requestEncoding">发送HTTP请求时所用的编码</param>  
         /// <param name="cookies">随同HTTP请求发送的Cookie信息，如果不需要身份验证可以为空</param>  
         /// <returns></returns>  
-        public static HttpWebResponse CreatePostHttpResponse(string url, IDictionary<string, string> parameters, int? timeout, string userAgent, Encoding requestEncoding, CookieCollection cookies,string referer)
+        public static HttpWebResponse CreatePostHttpResponse(string url, List<KeyValuePair<string,string>> parameters, int? timeout, string userAgent, Encoding requestEncoding, CookieCollection cookies,string referer)
         {
             Debug.WriteLine("CreatePostHttpResponse url:" + url);
             HttpWebResponse response = null;
@@ -188,15 +203,16 @@ namespace DeGuangTicketsHelper
                 {
                     StringBuilder buffer = new StringBuilder();
                     int i = 0;
-                    foreach (string key in parameters.Keys)
+                    
+                    foreach (var keyvalue in parameters)
                     {
                         if (i > 0)
                         {
-                            buffer.AppendFormat("&{0}={1}", key, parameters[key]);
+                            buffer.AppendFormat("&{0}={1}", keyvalue.Key, keyvalue.Value);
                         }
                         else
                         {
-                            buffer.AppendFormat("{0}={1}", key, parameters[key]);
+                            buffer.AppendFormat("{0}={1}", keyvalue.Key, keyvalue.Value);
                         }
                         i++;
                     }
