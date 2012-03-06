@@ -2289,7 +2289,7 @@ namespace DeGuangTicketsHelper
             {
                 TicketInfo ticketInfo = dgvTiketInfo.Rows[selectedRowsIndex].DataBoundItem as TicketInfo;
                 booking(ticketInfo);
-                //getVerificationCode();
+                getVerificationCode();
                 initDgvOrderSeatType(ticketInfo);
             }
             catch (Exception ex)

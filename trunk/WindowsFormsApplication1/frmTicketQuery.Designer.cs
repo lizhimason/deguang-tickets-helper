@@ -59,17 +59,17 @@
             this.flpTrainNumber = new System.Windows.Forms.FlowLayoutPanel();
             this.labTrainNumber = new System.Windows.Forms.Label();
             this.cboTrainNumber = new System.Windows.Forms.ComboBox();
+            this.dgvTiketInfo = new DeGuangTicketsHelper.DGDataGridView();
             this.tlpPassenger = new System.Windows.Forms.TableLayoutPanel();
             this.flpPassenger = new System.Windows.Forms.FlowLayoutPanel();
             this.labPassenger = new System.Windows.Forms.Label();
             this.btnSubmitOrder = new System.Windows.Forms.Button();
             this.picVerificationCode = new System.Windows.Forms.PictureBox();
             this.txtVerificationCode = new System.Windows.Forms.TextBox();
+            this.dgvOrder = new DeGuangTicketsHelper.DGDataGridView();
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.labTrainInfoLab = new System.Windows.Forms.Label();
             this.rtbTrainInfo = new System.Windows.Forms.RichTextBox();
-            this.dgvTiketInfo = new DeGuangTicketsHelper.DGDataGridView();
-            this.dgvOrder = new DeGuangTicketsHelper.DGDataGridView();
             this.flpOptions1.SuspendLayout();
             this.flpTrainType.SuspendLayout();
             this.flpSeatTypies.SuspendLayout();
@@ -81,12 +81,12 @@
             this.tlpTrainType.SuspendLayout();
             this.tlpQueryOption.SuspendLayout();
             this.flpTrainNumber.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvTiketInfo)).BeginInit();
             this.tlpPassenger.SuspendLayout();
             this.flpPassenger.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.picVerificationCode)).BeginInit();
-            this.flowLayoutPanel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvTiketInfo)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvOrder)).BeginInit();
+            this.flowLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // flpOptions1
@@ -425,6 +425,19 @@
             this.cboTrainNumber.TabIndex = 13;
             this.cboTrainNumber.Enter += new System.EventHandler(this.cboTrainNumber_Enter);
             // 
+            // dgvTiketInfo
+            // 
+            this.dgvTiketInfo.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+                        | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.dgvTiketInfo.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvTiketInfo.Location = new System.Drawing.Point(3, 259);
+            this.dgvTiketInfo.Name = "dgvTiketInfo";
+            this.dgvTiketInfo.RowTemplate.Height = 23;
+            this.dgvTiketInfo.Size = new System.Drawing.Size(832, 238);
+            this.dgvTiketInfo.TabIndex = 11;
+            this.dgvTiketInfo.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvTiketInfo_CellDoubleClick);
+            // 
             // tlpPassenger
             // 
             this.tlpPassenger.ColumnCount = 4;
@@ -494,6 +507,16 @@
             this.txtVerificationCode.Size = new System.Drawing.Size(80, 21);
             this.txtVerificationCode.TabIndex = 45;
             // 
+            // dgvOrder
+            // 
+            this.dgvOrder.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvOrder.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvOrder.Location = new System.Drawing.Point(3, 171);
+            this.dgvOrder.Name = "dgvOrder";
+            this.dgvOrder.RowTemplate.Height = 23;
+            this.dgvOrder.Size = new System.Drawing.Size(832, 54);
+            this.dgvOrder.TabIndex = 42;
+            // 
             // flowLayoutPanel1
             // 
             this.flowLayoutPanel1.Controls.Add(this.labTrainInfoLab);
@@ -517,39 +540,14 @@
             // 
             // rtbTrainInfo
             // 
-            this.rtbTrainInfo.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
             this.rtbTrainInfo.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.rtbTrainInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.rtbTrainInfo.Location = new System.Drawing.Point(71, 3);
             this.rtbTrainInfo.Name = "rtbTrainInfo";
             this.rtbTrainInfo.ReadOnly = true;
             this.rtbTrainInfo.Size = new System.Drawing.Size(764, 17);
             this.rtbTrainInfo.TabIndex = 6;
             this.rtbTrainInfo.Text = "";
-            // 
-            // dgvTiketInfo
-            // 
-            this.dgvTiketInfo.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.dgvTiketInfo.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvTiketInfo.Location = new System.Drawing.Point(3, 259);
-            this.dgvTiketInfo.Name = "dgvTiketInfo";
-            this.dgvTiketInfo.RowTemplate.Height = 23;
-            this.dgvTiketInfo.Size = new System.Drawing.Size(832, 238);
-            this.dgvTiketInfo.TabIndex = 11;
-            this.dgvTiketInfo.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvTiketInfo_CellDoubleClick);
-            // 
-            // dgvOrder
-            // 
-            this.dgvOrder.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvOrder.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgvOrder.Location = new System.Drawing.Point(3, 171);
-            this.dgvOrder.Name = "dgvOrder";
-            this.dgvOrder.RowTemplate.Height = 23;
-            this.dgvOrder.Size = new System.Drawing.Size(832, 54);
-            this.dgvOrder.TabIndex = 42;
             // 
             // frmTicketQuery
             // 
@@ -580,15 +578,15 @@
             this.tlpQueryOption.ResumeLayout(false);
             this.flpTrainNumber.ResumeLayout(false);
             this.flpTrainNumber.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvTiketInfo)).EndInit();
             this.tlpPassenger.ResumeLayout(false);
             this.tlpPassenger.PerformLayout();
             this.flpPassenger.ResumeLayout(false);
             this.flpPassenger.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.picVerificationCode)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvOrder)).EndInit();
             this.flowLayoutPanel1.ResumeLayout(false);
             this.flowLayoutPanel1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvTiketInfo)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvOrder)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
