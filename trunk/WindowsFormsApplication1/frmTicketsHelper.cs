@@ -168,11 +168,13 @@ namespace DeGuangTicketsHelper
         {
             sleep();
             count++;
-            string url = "https://dynamic.12306.cn/otsweb/passCodeAction.do?rand=lrand";
+            string url = "https://dynamic.12306.cn/otsweb/";
             //HttpWebRequest request2 = HttpWebResponseUtility.CreateGetHttpResponse(url, cookieContainer, "https://dynamic.12306.cn/otsweb/loginAction.do?method=login");
             //HttpWebResponse response = null;
             try
             {
+                CommUitl.getString(url,cookieContainer);
+                url = "https://dynamic.12306.cn/otsweb/passCodeAction.do?rand=sjrand";
                 picValidImg.Image = CommUitl.getVerificationCode(url, cookieContainer, cookieCollection);
                 //response = (HttpWebResponse)request2.GetResponse();
                 this.Invoke(this.showMsgDelegate, "取得验证码成功!");
@@ -342,7 +344,7 @@ namespace DeGuangTicketsHelper
         /// 登录
         /// </summary>
         /// <param name="obj"></param>
-        private void login(object obj)
+        private void    login(object obj)
         {
             try
             {
@@ -371,11 +373,15 @@ namespace DeGuangTicketsHelper
                 count++;
                 System.Net.ServicePointManager.CertificatePolicy = new MyPolicy();
 
-                // this is what we are sending
-                string post_data = "loginUser.user_name=tony12306cn&nameErrorFocus=&user.password=tony1234&passwordErrorFocus=&randCode=" + txtVerificationCode.Text + "&randErrorFocus=focus";
+                string uri = "https://dynamic.12306.cn/otsweb/loginAction.do?method=loginAysnSuggest";
+
+                string randStr = CommUitl.getString(uri,CommData.cookieContainer);
+
+                randStr = randStr.Split(',')[0].Split(':')[1].Replace("\"", string.Empty);
+                
 
                 // this is where we will send it
-                string uri = "https://dynamic.12306.cn/otsweb/loginAction.do?method=login";
+                uri = "https://dynamic.12306.cn/otsweb/loginAction.do?method=login";
 
                 // create a request
                 //HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
@@ -397,13 +403,13 @@ namespace DeGuangTicketsHelper
                 //requestStream.Close();
 
                 List<KeyValuePair<string, string>> param = new List<KeyValuePair<string, string>>();
-                
+                param.Add(new KeyValuePair<string, string>("loginRand", randStr));
                 param.Add(new KeyValuePair<string,string>("loginUser.user_name", txtUserName.Text));
                 param.Add(new KeyValuePair<string,string>("nameErrorFocus", string.Empty));
                 param.Add(new KeyValuePair<string,string>("user.password", txtPassword.Text));
                 param.Add(new KeyValuePair<string,string>("passwordErrorFocus", string.Empty));
                 param.Add(new KeyValuePair<string,string>("randCode", txtVerificationCode.Text));
-                param.Add(new KeyValuePair<string,string>("randErrorFocus", "focus"));
+                param.Add(new KeyValuePair<string,string>("randErrorFocus", string.Empty));
 
                 HttpWebResponse response = null;
                 try

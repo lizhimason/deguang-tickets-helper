@@ -233,7 +233,7 @@ namespace DeGuangTicketsHelper
         public static Image getVerificationCode(string url, CookieContainer cookieContainer, CookieCollection cookieCollection)
         {
             Image result = null;
-            HttpWebRequest request2 = HttpWebResponseUtility.CreateGetHttpResponse(url, cookieContainer, "https://dynamic.12306.cn/otsweb/loginAction.do?method=login");
+            HttpWebRequest request2 = HttpWebResponseUtility.CreateGetHttpResponse(url, cookieContainer, "https://dynamic.12306.cn/otsweb/loginAction.do?method=init");
             HttpWebResponse response;
             string cookieStr=string.Empty;
             try
