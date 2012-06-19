@@ -17,7 +17,7 @@ namespace DeGuangTicketsHelper
     {
         //private static readonly string DefaultUserAgent = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; SV1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)";
         private static readonly string DefaultUserAgent = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.2; Trident/4.0; .NET CLR 1.1.4322; .NET4.0C; .NET4.0E; .NET CLR 2.0.50727; .NET CLR 3.0.04506.648; .NET CLR 3.5.21022; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729)";
-        private static readonly string DefaultAccept = "image/gif, image/jpeg, image/pjpeg, image/pjpeg, application/xaml+xml, application/x-ms-xbap, application/x-ms-application, application/vnd.ms-excel, application/vnd.ms-powerpoint, application/msword, */*";
+        private static readonly string DefaultAccept = "*/*";
         private static readonly string DefaultContentType = "text/html; charset=GBK";
         private static readonly int DefaultTimeOut = 30000;
 
@@ -98,7 +98,7 @@ namespace DeGuangTicketsHelper
             request.KeepAlive = true;
             request.Accept = DefaultAccept;
             request.UserAgent = DefaultUserAgent;
-            request.Headers.Add("Accept-Language: zh-cn");
+            request.Headers.Add("Accept-Language: zh-CN");
             request.Headers.Add("Accept-Encoding: gzip, deflate");
             //request.Headers.Add("Connection: Keep-Alive");
             if (!string.IsNullOrEmpty(userAgent))

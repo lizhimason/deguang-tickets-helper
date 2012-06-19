@@ -1645,7 +1645,7 @@ namespace DeGuangTicketsHelper
             get
             {
                 // 使用本地车站信息.不从WEB取
-                stations = stations_buffer;
+                //stations = stations_buffer;
                 if (string.IsNullOrEmpty(stations) == true)
                 {
                     try
@@ -1855,7 +1855,14 @@ namespace DeGuangTicketsHelper
                     ticketInfo.HardSeat = ticketInfos[13];
                     ticketInfo.NoSeat = ticketInfos[14];
                     ticketInfo.Other = ticketInfos[15];
-                    ticketInfo.JsInfoString = jsInfos[ticketInfo.StationTrainCode];
+                    try
+                    {
+                        ticketInfo.JsInfoString = jsInfos[ticketInfo.StationTrainCode];
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex.Message);
+                    }
                     ticketInfoList.Add(ticketInfo);
                 }
             }
@@ -2157,6 +2164,7 @@ namespace DeGuangTicketsHelper
             postData.Add(new KeyValuePair<string,string>("from_station_name", ticketInfo.DepartureStation));
             postData.Add(new KeyValuePair<string,string>("to_station_name", ticketInfo.DestinationStation));
             postData.Add(new KeyValuePair<string,string>("ypInfoDetail", ticketInfo.InfoDetail));
+            postData.Add(new KeyValuePair<string, string>("mmStr", ticketInfo.MmStr));
             //// 列车编号
             //param.Add(new KeyValuePair<string,string>("station_train_code", ticketInfo.StationTrainCode);
             //// 列车编号

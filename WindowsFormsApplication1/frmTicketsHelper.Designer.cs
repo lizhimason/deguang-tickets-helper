@@ -53,6 +53,7 @@
             this.label4 = new System.Windows.Forms.Label();
             this.labInterval = new System.Windows.Forms.Label();
             this.chkRadom = new System.Windows.Forms.CheckBox();
+            this.label5 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.picValidImg)).BeginInit();
             this.statusStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -75,14 +76,12 @@
             // radDeGuangOrderMember
             // 
             this.radDeGuangOrderMember.AutoSize = true;
-            this.radDeGuangOrderMember.Checked = true;
             this.radDeGuangOrderMember.Location = new System.Drawing.Point(6, 20);
             this.radDeGuangOrderMember.Name = "radDeGuangOrderMember";
-            this.radDeGuangOrderMember.Size = new System.Drawing.Size(119, 16);
+            this.radDeGuangOrderMember.Size = new System.Drawing.Size(83, 16);
             this.radDeGuangOrderMember.TabIndex = 6;
-            this.radDeGuangOrderMember.TabStop = true;
             this.radDeGuangOrderMember.Tag = "";
-            this.radDeGuangOrderMember.Text = "德广订票器(推荐)";
+            this.radDeGuangOrderMember.Text = "德广订票器";
             this.toolTip1.SetToolTip(this.radDeGuangOrderMember, "[暂不支持]您设定的系统默认Web浏览器");
             this.radDeGuangOrderMember.UseVisualStyleBackColor = true;
             // 
@@ -101,12 +100,14 @@
             // radTickerWebBrowser
             // 
             this.radTickerWebBrowser.AutoSize = true;
+            this.radTickerWebBrowser.Checked = true;
             this.radTickerWebBrowser.Location = new System.Drawing.Point(6, 42);
             this.radTickerWebBrowser.Name = "radTickerWebBrowser";
-            this.radTickerWebBrowser.Size = new System.Drawing.Size(83, 16);
+            this.radTickerWebBrowser.Size = new System.Drawing.Size(119, 16);
             this.radTickerWebBrowser.TabIndex = 4;
+            this.radTickerWebBrowser.TabStop = true;
             this.radTickerWebBrowser.Tag = "";
-            this.radTickerWebBrowser.Text = "内置浏览器";
+            this.radTickerWebBrowser.Text = "内置浏览器(推荐)";
             this.toolTip1.SetToolTip(this.radTickerWebBrowser, "德广火车票助手内置的浏览器");
             this.radTickerWebBrowser.UseVisualStyleBackColor = true;
             // 
@@ -115,7 +116,7 @@
             this.lstMsg.FormattingEnabled = true;
             this.lstMsg.HorizontalScrollbar = true;
             this.lstMsg.ItemHeight = 12;
-            this.lstMsg.Location = new System.Drawing.Point(12, 234);
+            this.lstMsg.Location = new System.Drawing.Point(14, 259);
             this.lstMsg.Name = "lstMsg";
             this.lstMsg.Size = new System.Drawing.Size(324, 124);
             this.lstMsg.TabIndex = 42;
@@ -124,7 +125,7 @@
             // txtPassword
             // 
             this.txtPassword.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.txtPassword.Location = new System.Drawing.Point(73, 128);
+            this.txtPassword.Location = new System.Drawing.Point(75, 153);
             this.txtPassword.Name = "txtPassword";
             this.txtPassword.PasswordChar = '*';
             this.txtPassword.Size = new System.Drawing.Size(126, 26);
@@ -134,7 +135,7 @@
             // txtUserName
             // 
             this.txtUserName.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.txtUserName.Location = new System.Drawing.Point(73, 96);
+            this.txtUserName.Location = new System.Drawing.Point(75, 121);
             this.txtUserName.Name = "txtUserName";
             this.txtUserName.Size = new System.Drawing.Size(126, 26);
             this.txtUserName.TabIndex = 1;
@@ -142,7 +143,7 @@
             // 
             // picValidImg
             // 
-            this.picValidImg.Location = new System.Drawing.Point(121, 160);
+            this.picValidImg.Location = new System.Drawing.Point(123, 185);
             this.picValidImg.Name = "picValidImg";
             this.picValidImg.Size = new System.Drawing.Size(78, 26);
             this.picValidImg.TabIndex = 38;
@@ -153,7 +154,7 @@
             // txtVerificationCode
             // 
             this.txtVerificationCode.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.txtVerificationCode.Location = new System.Drawing.Point(73, 160);
+            this.txtVerificationCode.Location = new System.Drawing.Point(75, 185);
             this.txtVerificationCode.MaxLength = 4;
             this.txtVerificationCode.Name = "txtVerificationCode";
             this.txtVerificationCode.Size = new System.Drawing.Size(43, 26);
@@ -165,7 +166,7 @@
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tssVersion,
             this.tssAuthor});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 400);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 427);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(348, 22);
             this.statusStrip1.TabIndex = 35;
@@ -191,7 +192,7 @@
             // 
             this.btnExit.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnExit.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnExit.Location = new System.Drawing.Point(179, 364);
+            this.btnExit.Location = new System.Drawing.Point(181, 389);
             this.btnExit.Name = "btnExit";
             this.btnExit.Size = new System.Drawing.Size(159, 33);
             this.btnExit.TabIndex = 10;
@@ -204,7 +205,7 @@
             this.groupBox1.Controls.Add(this.radDeGuangOrderMember);
             this.groupBox1.Controls.Add(this.radIE);
             this.groupBox1.Controls.Add(this.radTickerWebBrowser);
-            this.groupBox1.Location = new System.Drawing.Point(205, 96);
+            this.groupBox1.Location = new System.Drawing.Point(207, 121);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(133, 86);
             this.groupBox1.TabIndex = 46;
@@ -216,7 +217,7 @@
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label3.Location = new System.Drawing.Point(11, 163);
+            this.label3.Location = new System.Drawing.Point(13, 188);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(56, 16);
             this.label3.TabIndex = 41;
@@ -226,7 +227,7 @@
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label2.Location = new System.Drawing.Point(11, 131);
+            this.label2.Location = new System.Drawing.Point(13, 156);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(40, 16);
             this.label2.TabIndex = 40;
@@ -236,7 +237,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label1.Location = new System.Drawing.Point(11, 101);
+            this.label1.Location = new System.Drawing.Point(13, 126);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(56, 16);
             this.label1.TabIndex = 39;
@@ -245,7 +246,7 @@
             // btnLogin
             // 
             this.btnLogin.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnLogin.Location = new System.Drawing.Point(12, 364);
+            this.btnLogin.Location = new System.Drawing.Point(14, 389);
             this.btnLogin.Name = "btnLogin";
             this.btnLogin.Size = new System.Drawing.Size(159, 33);
             this.btnLogin.TabIndex = 9;
@@ -256,7 +257,7 @@
             // numInterval
             // 
             this.numInterval.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.numInterval.Location = new System.Drawing.Point(120, 192);
+            this.numInterval.Location = new System.Drawing.Point(122, 217);
             this.numInterval.Name = "numInterval";
             this.numInterval.Size = new System.Drawing.Size(77, 26);
             this.numInterval.TabIndex = 7;
@@ -271,7 +272,7 @@
             // 
             this.label4.AutoSize = true;
             this.label4.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label4.Location = new System.Drawing.Point(208, 197);
+            this.label4.Location = new System.Drawing.Point(210, 222);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(24, 16);
             this.label4.TabIndex = 49;
@@ -281,7 +282,7 @@
             // 
             this.labInterval.AutoSize = true;
             this.labInterval.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.labInterval.Location = new System.Drawing.Point(11, 197);
+            this.labInterval.Location = new System.Drawing.Point(13, 222);
             this.labInterval.Name = "labInterval";
             this.labInterval.Size = new System.Drawing.Size(72, 16);
             this.labInterval.TabIndex = 41;
@@ -291,7 +292,7 @@
             // 
             this.chkRadom.AutoSize = true;
             this.chkRadom.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.chkRadom.Location = new System.Drawing.Point(242, 197);
+            this.chkRadom.Location = new System.Drawing.Point(244, 222);
             this.chkRadom.Name = "chkRadom";
             this.chkRadom.Size = new System.Drawing.Size(91, 20);
             this.chkRadom.TabIndex = 8;
@@ -299,13 +300,24 @@
             this.chkRadom.UseVisualStyleBackColor = true;
             this.chkRadom.CheckedChanged += new System.EventHandler(this.chkRadom_CheckedChanged);
             // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.ForeColor = System.Drawing.Color.Red;
+            this.label5.Location = new System.Drawing.Point(14, 99);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(299, 12);
+            this.label5.TabIndex = 50;
+            this.label5.Text = "注意：12306修改登录机制，目前只有内置浏览器可用。";
+            // 
             // frmTicketsHelper
             // 
             this.AcceptButton = this.btnLogin;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnExit;
-            this.ClientSize = new System.Drawing.Size(348, 422);
+            this.ClientSize = new System.Drawing.Size(348, 449);
+            this.Controls.Add(this.label5);
             this.Controls.Add(this.chkRadom);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.numInterval);
@@ -366,5 +378,6 @@
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label labInterval;
         private System.Windows.Forms.CheckBox chkRadom;
+        private System.Windows.Forms.Label label5;
     }
 }

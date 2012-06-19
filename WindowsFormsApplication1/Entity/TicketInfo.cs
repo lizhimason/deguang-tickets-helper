@@ -279,6 +279,7 @@ namespace DeGuangTicketsHelper.Entity
                     DepartureStationTelCode = infos[4];
                     DestinationStationTelCode = infos[5];
                     InfoDetail = infos[9];
+                    MmStr = infos[10];
                 }
             }
         }
@@ -300,6 +301,10 @@ namespace DeGuangTicketsHelper.Entity
         /// ypInfoDetail
         /// </summary>
         public string InfoDetail { get; set; }
+        /// <summary>
+        /// mmStr
+        /// </summary>
+        public string MmStr { get; set; }
         #endregion
 
         /// <summary>
