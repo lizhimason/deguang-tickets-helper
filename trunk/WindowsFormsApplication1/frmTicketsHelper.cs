@@ -245,7 +245,7 @@ namespace DeGuangTicketsHelper
                 {
                     this.Invoke(new showMsgDelegate1(showTimeInfo), "休息" + tryInterval + "秒");
                 }
-                Thread.Sleep(TryInterval * 1000);
+                Thread.Sleep(tryInterval * 1000);
             }
         }
 
@@ -256,6 +256,7 @@ namespace DeGuangTicketsHelper
         /// <param name="e"></param>
         private void btnLogin_Click(object sender, EventArgs e)
         {
+            //this.Invoke(LoggedDelegate);
             if (logged == true)
             {
                 if (MessageBox.Show("您已经登录,您需要再次进入12306网站吗?需要您已经退出,就需要重新登录!", "德广火车票助手 温馨提示", MessageBoxButtons.YesNo, MessageBoxIcon.Information, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
@@ -344,11 +345,12 @@ namespace DeGuangTicketsHelper
         /// 登录
         /// </summary>
         /// <param name="obj"></param>
-        private void    login(object obj)
+        private void login(object obj)
         {
             try
             {
                 running = true;
+                // 等待
                 sleep();
                 if (stop == true)
                 {
@@ -360,7 +362,7 @@ namespace DeGuangTicketsHelper
                 }
                 if (logged == true)
                 {
-                    if (MessageBox.Show("您已经登录,您需要再次进入12306网站吗?需要您已经退出,就需要重新登录!", "德广火车票助手 温馨提示", MessageBoxButtons.YesNo, MessageBoxIcon.Information, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
+                    if (MessageBox.Show("您已经登录,您需要再次进入12306网站吗?如果您已经退出,就需要重新登录!", "德广火车票助手 温馨提示", MessageBoxButtons.YesNo, MessageBoxIcon.Information, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
                     {
                         this.Invoke(LoggedDelegate);
                         //openie();
@@ -372,66 +374,62 @@ namespace DeGuangTicketsHelper
                 Trace.WriteLine("login()");
                 count++;
                 System.Net.ServicePointManager.CertificatePolicy = new MyPolicy();
-
+                //通过此路径取得登录需要的loginRand变量的值,随机码.
                 string uri = "https://dynamic.12306.cn/otsweb/loginAction.do?method=loginAysnSuggest";
 
-                string randStr = CommUitl.getString(uri,CommData.cookieContainer);
-
-                randStr = randStr.Split(',')[0].Split(':')[1].Replace("\"", string.Empty);
+                string randStr = CommUitl.getString(uri, CommData.cookieContainer);
                 
+                randStr = randStr.Split(',')[0].Split(':')[1].Replace("\"", string.Empty);
 
-                // this is where we will send it
+
+                //登录请求提交路径
                 uri = "https://dynamic.12306.cn/otsweb/loginAction.do?method=login";
 
-                // create a request
-                //HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
-                //request.CookieContainer = cookieContainer;
-                //request.KeepAlive = false;
-                //request.ProtocolVersion = HttpVersion.Version10;
-                //request.Method = "POST";
-
-                //// turn our request string into a byte stream
-                //byte[] postBytes = Encoding.ASCII.GetBytes(post_data);
-
-                //// this is important - make sure you specify type this way
-                //request.ContentType = "application/x-www-form-urlencoded";
-                //request.ContentLength = postBytes.Length;
-                //Stream requestStream = request.GetRequestStream();
-
-                //// now send it
-                //requestStream.Write(postBytes, 0, postBytes.Length);
-                //requestStream.Close();
-
+                // 为参数变量赋值
                 List<KeyValuePair<string, string>> param = new List<KeyValuePair<string, string>>();
+                // 随机码
                 param.Add(new KeyValuePair<string, string>("loginRand", randStr));
-                param.Add(new KeyValuePair<string,string>("loginUser.user_name", txtUserName.Text));
-                param.Add(new KeyValuePair<string,string>("nameErrorFocus", string.Empty));
-                param.Add(new KeyValuePair<string,string>("user.password", txtPassword.Text));
-                param.Add(new KeyValuePair<string,string>("passwordErrorFocus", string.Empty));
-                param.Add(new KeyValuePair<string,string>("randCode", txtVerificationCode.Text));
-                param.Add(new KeyValuePair<string,string>("randErrorFocus", string.Empty));
+                // 退票登录
+                param.Add(new KeyValuePair<string, string>("refundLogin", "N"));
+                // 退票标识
+                param.Add(new KeyValuePair<string, string>("refundFlag", "Y"));
+                // 登录用户名
+                param.Add(new KeyValuePair<string, string>("loginUser.user_name", txtUserName.Text));
+                // 
+                param.Add(new KeyValuePair<string, string>("nameErrorFocus", string.Empty));
+                // 密码
+                param.Add(new KeyValuePair<string, string>("user.password", txtPassword.Text));
+                // 
+                param.Add(new KeyValuePair<string, string>("passwordErrorFocus", string.Empty));
+                // 图形验证码
+                param.Add(new KeyValuePair<string, string>("randCode", txtVerificationCode.Text));
+                // 
+                param.Add(new KeyValuePair<string, string>("randErrorFocus", string.Empty));
 
                 HttpWebResponse response = null;
                 try
                 {
-                    response = HttpWebResponseUtility.CreatePostHttpResponse(uri, param,null, DefaultUserAgent, Encoding.ASCII, cookieCollection, uri);
+                    // 提交登录请求
+                    response = HttpWebResponseUtility.CreatePostHttpResponse(uri, param, null, DefaultUserAgent, Encoding.ASCII, cookieCollection, uri);
                 }
                 catch (Exception ex)
                 {
+                    // 显示异常信息
                     this.Invoke(this.showMsgDelegate, ex.Message);
-                    //showInfo(ex.Message);
                 }
 
                 if (response != null)
                 {
-                    // grab te response and print it out to the console along with the status code
-                    //HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                    // 得到返回的数据流
                     Stream receiveStream = response.GetResponseStream();
+                    // 如果有压缩,则进行解压
                     if (response.ContentEncoding.ToLower().Contains("gzip"))
                     {
                         receiveStream = new GZipStream(receiveStream, CompressionMode.Decompress);
                     }
+                    // 得到返回的字符串
                     html = new StreamReader(receiveStream).ReadToEnd();
+                    // 进行各种错误判断
                     if (html.IndexOf("当前访问用户过多") > 0)
                     {
                         this.Invoke(this.showMsgDelegate, "当前访问用户过多");
@@ -440,8 +438,8 @@ namespace DeGuangTicketsHelper
                     else if (html.IndexOf("请输入正确的验证码") > 0)
                     {
                         messageBoxShowInfo("请输入正确的验证码!");
-                        this.Invoke(focusDelegate,new object[]{txtVerificationCode});
-                        this.Invoke(setControlTextDelegate,new object[]{txtVerificationCode,string.Empty,true});
+                        this.Invoke(focusDelegate, new object[] { txtVerificationCode });
+                        this.Invoke(setControlTextDelegate, new object[] { txtVerificationCode, string.Empty, true });
                         getVerificationCode(this);
                     }
                     else if (html.IndexOf("登录名不存在") > 0)
@@ -461,40 +459,51 @@ namespace DeGuangTicketsHelper
                     }
                     else if (html.IndexOf("系统维护中") > 0)
                     {
-                        messageBoxShowInfo("系统维护中!");
+                        //messageBoxShowInfo("系统维护中!");
+                        this.Invoke(this.showMsgDelegate, "系统维护中!");
+                        Thread.Sleep((Int32)numInterval.Value*1000);
+                        login(null);
                     }
                     else if (html.IndexOf("我的12306") > 0)
                     {
+                        // 登录成功,激活窗口,提醒用户
                         this.Invoke(activateDelegate);
+                        // 记录登录用时及次数
                         endTime = DateTime.Now;
                         logged = true;
                         timeSpan = endTime.Subtract(beginTime);
                         timeSpanStr = getTimeSpanString(timeSpan);
 
-                        MessageBox.Show("经过 " + timeSpanStr + ", " + count + " 次的尝试后,您已经登录成功!" + Environment.NewLine
-                            + "点击确定打开12306网站,请忽略登录界面,直接点击\"车票预订\"就可以啦!" + Environment.NewLine
-                            + Environment.NewLine
-                            + "深圳市德广信息技术有限公司 祝您:" + Environment.NewLine
-                            + "回家一路顺风!全家身体健康!幸福快乐!事事如意!", "德广火车票助手 恭喜您", MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1);
-
-                        this.Invoke(shareToWeiboDelegate, new object[] { "我用#德广火车票助手#经过" + timeSpanStr +"尝试登录"+ count + "次后,成功登录上了12306.cn!你用了多长时间才登录成功的呢?" });
-
+                        //MessageBox.Show("经过 " + timeSpanStr + ", " + count + " 次的尝试后,您已经登录成功!" + Environment.NewLine
+                        //    + "点击确定打开12306网站,请忽略登录界面,直接点击\"车票预订\"就可以啦!" + Environment.NewLine
+                        //    + Environment.NewLine
+                        //    + "深圳市德广信息技术有限公司 祝您:" + Environment.NewLine
+                        //    + "回家一路顺风!全家身体健康!幸福快乐!事事如意!", "德广火车票助手 恭喜您", MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1);
+                        this.Invoke(this.showMsgDelegate, "登录成功:用"+timeSpanStr + "/" + count + " 次");
+                        // 触发登录成功事件
                         this.Invoke(LoggedDelegate);
+                        // 修改要发布到微博的默认内容
+                        this.Invoke(shareToWeiboDelegate, new object[] { "我用#德广火车票助手#经过" + timeSpanStr + "尝试登录" + count + "次后,成功登录上了12306.cn!你用了多长时间才登录成功的呢?" });
                         //openie();
-                        this.Invoke(this.showMsgDelegate, "登录成功!");
+                        //this.Invoke(this.showMsgDelegate, "登录成功!");
                     }
                     else
                     {
                         Trace.WriteLine(html);
                         login(null);
                     }
-                    
+
                     Trace.WriteLine(response.StatusCode);
                 }
                 else
                 {
                     login(null);
                 }
+            }
+            catch (WebException webex)
+            {
+                this.Invoke(this.showMsgDelegate, webex.Message);
+                login(null);
             }
             catch (Exception ex)
             {

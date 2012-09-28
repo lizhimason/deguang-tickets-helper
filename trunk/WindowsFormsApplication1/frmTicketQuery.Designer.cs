@@ -38,6 +38,8 @@
             this.dtpDepartureDate = new System.Windows.Forms.DateTimePicker();
             this.labDepartureTime = new System.Windows.Forms.Label();
             this.cboDepartureTime = new System.Windows.Forms.ComboBox();
+            this.chkRepeat = new System.Windows.Forms.CheckBox();
+            this.chkQueryBySelect = new System.Windows.Forms.CheckBox();
             this.btnQuery = new System.Windows.Forms.Button();
             this.flpTrainType = new System.Windows.Forms.FlowLayoutPanel();
             this.labTrainType = new System.Windows.Forms.Label();
@@ -59,7 +61,6 @@
             this.flpTrainNumber = new System.Windows.Forms.FlowLayoutPanel();
             this.labTrainNumber = new System.Windows.Forms.Label();
             this.cboTrainNumber = new System.Windows.Forms.ComboBox();
-            this.dgvTiketInfo = new DeGuangTicketsHelper.DGDataGridView();
             this.tlpPassenger = new System.Windows.Forms.TableLayoutPanel();
             this.flpPassenger = new System.Windows.Forms.FlowLayoutPanel();
             this.labPassenger = new System.Windows.Forms.Label();
@@ -70,6 +71,9 @@
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.labTrainInfoLab = new System.Windows.Forms.Label();
             this.rtbTrainInfo = new System.Windows.Forms.RichTextBox();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.lstSelectTick = new System.Windows.Forms.ListBox();
+            this.dgvTiketInfo = new DeGuangTicketsHelper.DGDataGridView();
             this.flpOptions1.SuspendLayout();
             this.flpTrainType.SuspendLayout();
             this.flpSeatTypies.SuspendLayout();
@@ -81,12 +85,15 @@
             this.tlpTrainType.SuspendLayout();
             this.tlpQueryOption.SuspendLayout();
             this.flpTrainNumber.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvTiketInfo)).BeginInit();
             this.tlpPassenger.SuspendLayout();
             this.flpPassenger.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.picVerificationCode)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvOrder)).BeginInit();
             this.flowLayoutPanel1.SuspendLayout();
+            this.splitContainer1.Panel1.SuspendLayout();
+            this.splitContainer1.Panel2.SuspendLayout();
+            this.splitContainer1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvTiketInfo)).BeginInit();
             this.SuspendLayout();
             // 
             // flpOptions1
@@ -99,11 +106,13 @@
             this.flpOptions1.Controls.Add(this.dtpDepartureDate);
             this.flpOptions1.Controls.Add(this.labDepartureTime);
             this.flpOptions1.Controls.Add(this.cboDepartureTime);
+            this.flpOptions1.Controls.Add(this.chkRepeat);
+            this.flpOptions1.Controls.Add(this.chkQueryBySelect);
             this.flpOptions1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flpOptions1.Location = new System.Drawing.Point(0, 0);
             this.flpOptions1.Margin = new System.Windows.Forms.Padding(0);
             this.flpOptions1.Name = "flpOptions1";
-            this.flpOptions1.Size = new System.Drawing.Size(758, 28);
+            this.flpOptions1.Size = new System.Drawing.Size(861, 28);
             this.flpOptions1.TabIndex = 0;
             // 
             // labDepartureStation
@@ -179,9 +188,30 @@
             this.cboDepartureTime.Size = new System.Drawing.Size(121, 20);
             this.cboDepartureTime.TabIndex = 6;
             // 
+            // chkRepeat
+            // 
+            this.chkRepeat.AutoSize = true;
+            this.chkRepeat.Location = new System.Drawing.Point(679, 3);
+            this.chkRepeat.Name = "chkRepeat";
+            this.chkRepeat.Size = new System.Drawing.Size(72, 16);
+            this.chkRepeat.TabIndex = 11;
+            this.chkRepeat.Text = "重复查询";
+            this.chkRepeat.UseVisualStyleBackColor = true;
+            this.chkRepeat.CheckedChanged += new System.EventHandler(this.chkRepeat_CheckedChanged);
+            // 
+            // chkQueryBySelect
+            // 
+            this.chkQueryBySelect.AutoSize = true;
+            this.chkQueryBySelect.Location = new System.Drawing.Point(757, 3);
+            this.chkQueryBySelect.Name = "chkQueryBySelect";
+            this.chkQueryBySelect.Size = new System.Drawing.Size(96, 16);
+            this.chkQueryBySelect.TabIndex = 11;
+            this.chkQueryBySelect.Text = "查询监控列车";
+            this.chkQueryBySelect.UseVisualStyleBackColor = true;
+            // 
             // btnQuery
             // 
-            this.btnQuery.Location = new System.Drawing.Point(761, 3);
+            this.btnQuery.Location = new System.Drawing.Point(864, 3);
             this.btnQuery.Name = "btnQuery";
             this.btnQuery.Size = new System.Drawing.Size(74, 22);
             this.btnQuery.TabIndex = 1;
@@ -196,7 +226,7 @@
             this.flpTrainType.Location = new System.Drawing.Point(0, 0);
             this.flpTrainType.Margin = new System.Windows.Forms.Padding(0);
             this.flpTrainType.Name = "flpTrainType";
-            this.flpTrainType.Size = new System.Drawing.Size(584, 28);
+            this.flpTrainType.Size = new System.Drawing.Size(687, 28);
             this.flpTrainType.TabIndex = 2;
             // 
             // labTrainType
@@ -216,7 +246,7 @@
             this.flpSeatTypies.Location = new System.Drawing.Point(0, 84);
             this.flpSeatTypies.Margin = new System.Windows.Forms.Padding(0);
             this.flpSeatTypies.Name = "flpSeatTypies";
-            this.flpSeatTypies.Size = new System.Drawing.Size(838, 28);
+            this.flpSeatTypies.Size = new System.Drawing.Size(941, 28);
             this.flpSeatTypies.TabIndex = 3;
             // 
             // labSeatTypies
@@ -233,7 +263,7 @@
             // 
             this.flpTrainPassType.Controls.Add(this.labTrainPassType);
             this.flpTrainPassType.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flpTrainPassType.Location = new System.Drawing.Point(584, 0);
+            this.flpTrainPassType.Location = new System.Drawing.Point(687, 0);
             this.flpTrainPassType.Margin = new System.Windows.Forms.Padding(0);
             this.flpTrainPassType.Name = "flpTrainPassType";
             this.flpTrainPassType.Size = new System.Drawing.Size(254, 28);
@@ -256,7 +286,7 @@
             this.flpQueryResult.Location = new System.Drawing.Point(0, 0);
             this.flpQueryResult.Margin = new System.Windows.Forms.Padding(0);
             this.flpQueryResult.Name = "flpQueryResult";
-            this.flpQueryResult.Size = new System.Drawing.Size(485, 28);
+            this.flpQueryResult.Size = new System.Drawing.Size(588, 28);
             this.flpQueryResult.TabIndex = 13;
             // 
             // labTicketInfo
@@ -272,7 +302,7 @@
             // 
             this.labMem.AutoSize = true;
             this.labMem.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.labMem.Location = new System.Drawing.Point(488, 0);
+            this.labMem.Location = new System.Drawing.Point(591, 0);
             this.labMem.Name = "labMem";
             this.labMem.Padding = new System.Windows.Forms.Padding(3, 8, 3, 3);
             this.labMem.Size = new System.Drawing.Size(347, 28);
@@ -286,7 +316,7 @@
             this.tssAuthor});
             this.statusStrip1.Location = new System.Drawing.Point(0, 500);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(838, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(941, 22);
             this.statusStrip1.TabIndex = 36;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -300,7 +330,7 @@
             // 
             this.tssAuthor.ForeColor = System.Drawing.Color.Blue;
             this.tssAuthor.Name = "tssAuthor";
-            this.tssAuthor.Size = new System.Drawing.Size(788, 17);
+            this.tssAuthor.Size = new System.Drawing.Size(891, 17);
             this.tssAuthor.Spring = true;
             this.tssAuthor.Text = "深圳市德广信息技术有限公司";
             this.tssAuthor.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -314,10 +344,10 @@
             this.tlpMain.Controls.Add(this.tlpTrainType, 0, 1);
             this.tlpMain.Controls.Add(this.flpSeatTypies, 0, 2);
             this.tlpMain.Controls.Add(this.tlpQueryOption, 0, 0);
-            this.tlpMain.Controls.Add(this.dgvTiketInfo, 0, 7);
             this.tlpMain.Controls.Add(this.tlpPassenger, 0, 4);
             this.tlpMain.Controls.Add(this.dgvOrder, 0, 5);
             this.tlpMain.Controls.Add(this.flowLayoutPanel1, 0, 3);
+            this.tlpMain.Controls.Add(this.splitContainer1, 0, 7);
             this.tlpMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpMain.Location = new System.Drawing.Point(0, 0);
             this.tlpMain.Margin = new System.Windows.Forms.Padding(0);
@@ -331,7 +361,7 @@
             this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 60F));
             this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
             this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tlpMain.Size = new System.Drawing.Size(838, 500);
+            this.tlpMain.Size = new System.Drawing.Size(941, 500);
             this.tlpMain.TabIndex = 37;
             // 
             // tlpQueryResult
@@ -347,7 +377,7 @@
             this.tlpQueryResult.Name = "tlpQueryResult";
             this.tlpQueryResult.RowCount = 1;
             this.tlpQueryResult.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tlpQueryResult.Size = new System.Drawing.Size(838, 28);
+            this.tlpQueryResult.Size = new System.Drawing.Size(941, 28);
             this.tlpQueryResult.TabIndex = 40;
             // 
             // tlpTrainType
@@ -363,7 +393,7 @@
             this.tlpTrainType.Name = "tlpTrainType";
             this.tlpTrainType.RowCount = 1;
             this.tlpTrainType.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tlpTrainType.Size = new System.Drawing.Size(838, 28);
+            this.tlpTrainType.Size = new System.Drawing.Size(941, 28);
             this.tlpTrainType.TabIndex = 39;
             // 
             // tlpQueryOption
@@ -382,12 +412,12 @@
             this.tlpQueryOption.RowCount = 2;
             this.tlpQueryOption.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tlpQueryOption.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tlpQueryOption.Size = new System.Drawing.Size(838, 56);
+            this.tlpQueryOption.Size = new System.Drawing.Size(941, 56);
             this.tlpQueryOption.TabIndex = 38;
             // 
             // btnMoreOption
             // 
-            this.btnMoreOption.Location = new System.Drawing.Point(761, 31);
+            this.btnMoreOption.Location = new System.Drawing.Point(864, 31);
             this.btnMoreOption.Name = "btnMoreOption";
             this.btnMoreOption.Size = new System.Drawing.Size(74, 22);
             this.btnMoreOption.TabIndex = 2;
@@ -403,7 +433,7 @@
             this.flpTrainNumber.Location = new System.Drawing.Point(0, 28);
             this.flpTrainNumber.Margin = new System.Windows.Forms.Padding(0);
             this.flpTrainNumber.Name = "flpTrainNumber";
-            this.flpTrainNumber.Size = new System.Drawing.Size(758, 28);
+            this.flpTrainNumber.Size = new System.Drawing.Size(861, 28);
             this.flpTrainNumber.TabIndex = 3;
             // 
             // labTrainNumber
@@ -425,19 +455,6 @@
             this.cboTrainNumber.TabIndex = 13;
             this.cboTrainNumber.Enter += new System.EventHandler(this.cboTrainNumber_Enter);
             // 
-            // dgvTiketInfo
-            // 
-            this.dgvTiketInfo.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.dgvTiketInfo.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvTiketInfo.Location = new System.Drawing.Point(3, 259);
-            this.dgvTiketInfo.Name = "dgvTiketInfo";
-            this.dgvTiketInfo.RowTemplate.Height = 23;
-            this.dgvTiketInfo.Size = new System.Drawing.Size(832, 238);
-            this.dgvTiketInfo.TabIndex = 11;
-            this.dgvTiketInfo.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvTiketInfo_CellDoubleClick);
-            // 
             // tlpPassenger
             // 
             this.tlpPassenger.ColumnCount = 4;
@@ -455,7 +472,7 @@
             this.tlpPassenger.Name = "tlpPassenger";
             this.tlpPassenger.RowCount = 1;
             this.tlpPassenger.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tlpPassenger.Size = new System.Drawing.Size(838, 28);
+            this.tlpPassenger.Size = new System.Drawing.Size(941, 28);
             this.tlpPassenger.TabIndex = 41;
             // 
             // flpPassenger
@@ -479,7 +496,7 @@
             // 
             // btnSubmitOrder
             // 
-            this.btnSubmitOrder.Location = new System.Drawing.Point(761, 3);
+            this.btnSubmitOrder.Location = new System.Drawing.Point(864, 3);
             this.btnSubmitOrder.Name = "btnSubmitOrder";
             this.btnSubmitOrder.Size = new System.Drawing.Size(74, 22);
             this.btnSubmitOrder.TabIndex = 43;
@@ -490,7 +507,7 @@
             // picVerificationCode
             // 
             this.picVerificationCode.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.picVerificationCode.Location = new System.Drawing.Point(598, 0);
+            this.picVerificationCode.Location = new System.Drawing.Point(701, 0);
             this.picVerificationCode.Margin = new System.Windows.Forms.Padding(0);
             this.picVerificationCode.Name = "picVerificationCode";
             this.picVerificationCode.Size = new System.Drawing.Size(80, 28);
@@ -501,7 +518,7 @@
             // txtVerificationCode
             // 
             this.txtVerificationCode.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtVerificationCode.Location = new System.Drawing.Point(678, 3);
+            this.txtVerificationCode.Location = new System.Drawing.Point(781, 3);
             this.txtVerificationCode.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
             this.txtVerificationCode.Name = "txtVerificationCode";
             this.txtVerificationCode.Size = new System.Drawing.Size(80, 21);
@@ -514,7 +531,7 @@
             this.dgvOrder.Location = new System.Drawing.Point(3, 171);
             this.dgvOrder.Name = "dgvOrder";
             this.dgvOrder.RowTemplate.Height = 23;
-            this.dgvOrder.Size = new System.Drawing.Size(832, 54);
+            this.dgvOrder.Size = new System.Drawing.Size(935, 54);
             this.dgvOrder.TabIndex = 42;
             // 
             // flowLayoutPanel1
@@ -525,12 +542,13 @@
             this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 112);
             this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(0);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(838, 28);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(941, 28);
             this.flowLayoutPanel1.TabIndex = 3;
             // 
             // labTrainInfoLab
             // 
             this.labTrainInfoLab.AutoSize = true;
+            this.labTrainInfoLab.Dock = System.Windows.Forms.DockStyle.Left;
             this.labTrainInfoLab.Location = new System.Drawing.Point(3, 0);
             this.labTrainInfoLab.Name = "labTrainInfoLab";
             this.labTrainInfoLab.Padding = new System.Windows.Forms.Padding(0, 8, 3, 3);
@@ -549,11 +567,51 @@
             this.rtbTrainInfo.TabIndex = 6;
             this.rtbTrainInfo.Text = "";
             // 
+            // splitContainer1
+            // 
+            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer1.Location = new System.Drawing.Point(3, 259);
+            this.splitContainer1.Name = "splitContainer1";
+            // 
+            // splitContainer1.Panel1
+            // 
+            this.splitContainer1.Panel1.Controls.Add(this.lstSelectTick);
+            // 
+            // splitContainer1.Panel2
+            // 
+            this.splitContainer1.Panel2.Controls.Add(this.dgvTiketInfo);
+            this.splitContainer1.Size = new System.Drawing.Size(935, 238);
+            this.splitContainer1.SplitterDistance = 168;
+            this.splitContainer1.TabIndex = 43;
+            // 
+            // lstSelectTick
+            // 
+            this.lstSelectTick.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstSelectTick.FormattingEnabled = true;
+            this.lstSelectTick.ItemHeight = 12;
+            this.lstSelectTick.Location = new System.Drawing.Point(0, 0);
+            this.lstSelectTick.Name = "lstSelectTick";
+            this.lstSelectTick.Size = new System.Drawing.Size(168, 232);
+            this.lstSelectTick.TabIndex = 0;
+            // 
+            // dgvTiketInfo
+            // 
+            this.dgvTiketInfo.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvTiketInfo.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvTiketInfo.Location = new System.Drawing.Point(0, 0);
+            this.dgvTiketInfo.Name = "dgvTiketInfo";
+            this.dgvTiketInfo.RowTemplate.Height = 23;
+            this.dgvTiketInfo.Size = new System.Drawing.Size(763, 238);
+            this.dgvTiketInfo.TabIndex = 12;
+            this.dgvTiketInfo.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvTiketInfo_CellValueChanged);
+            this.dgvTiketInfo.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvTiketInfo_CellDoubleClick);
+            this.dgvTiketInfo.CurrentCellDirtyStateChanged += new System.EventHandler(this.dgvTiketInfo_CurrentCellDirtyStateChanged);
+            // 
             // frmTicketQuery
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(838, 522);
+            this.ClientSize = new System.Drawing.Size(941, 522);
             this.Controls.Add(this.tlpMain);
             this.Controls.Add(this.statusStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -578,7 +636,6 @@
             this.tlpQueryOption.ResumeLayout(false);
             this.flpTrainNumber.ResumeLayout(false);
             this.flpTrainNumber.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvTiketInfo)).EndInit();
             this.tlpPassenger.ResumeLayout(false);
             this.tlpPassenger.PerformLayout();
             this.flpPassenger.ResumeLayout(false);
@@ -587,6 +644,10 @@
             ((System.ComponentModel.ISupportInitialize)(this.dgvOrder)).EndInit();
             this.flowLayoutPanel1.ResumeLayout(false);
             this.flowLayoutPanel1.PerformLayout();
+            this.splitContainer1.Panel1.ResumeLayout(false);
+            this.splitContainer1.Panel2.ResumeLayout(false);
+            this.splitContainer1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvTiketInfo)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -605,7 +666,6 @@
         private System.Windows.Forms.FlowLayoutPanel flpTrainType;
         private System.Windows.Forms.ComboBox cboDepartureStation;
         private System.Windows.Forms.ComboBox cboDestinationStation;
-        private DGDataGridView dgvTiketInfo;
         private System.Windows.Forms.FlowLayoutPanel flpSeatTypies;
         private System.Windows.Forms.FlowLayoutPanel flpTrainPassType;
         private System.Windows.Forms.FlowLayoutPanel flpQueryResult;
@@ -635,5 +695,10 @@
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
         private System.Windows.Forms.Label labTrainInfoLab;
         private System.Windows.Forms.RichTextBox rtbTrainInfo;
+        private System.Windows.Forms.CheckBox chkRepeat;
+        private System.Windows.Forms.SplitContainer splitContainer1;
+        private System.Windows.Forms.ListBox lstSelectTick;
+        private DGDataGridView dgvTiketInfo;
+        private System.Windows.Forms.CheckBox chkQueryBySelect;
     }
 }

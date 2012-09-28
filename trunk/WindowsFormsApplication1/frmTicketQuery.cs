@@ -12,6 +12,7 @@ using System.Net;
 using System.Web;
 using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace DeGuangTicketsHelper
 {
@@ -1392,12 +1393,22 @@ namespace DeGuangTicketsHelper
         private static List<Passenger> passengers;
         private static BindingList<Passenger> ordersPassengers;
         private static string submutOrderRequestUrl;
+
+        private System.Windows.Forms.Timer timQuery;
+
+        private string ticketJsonResult;
+        private string ticketJsonResult_old;
+        /// <summary>
+        /// 查询车票信息运行中
+        /// </summary>
+        private bool queryTicketRunning;
         /// <summary>
         /// 防止点击复选框,代码勾选其他复选框时,造成的多次调用.
         /// </summary>
 
         public frmTicketQuery()
         {
+            queryTicketRunning = false;
             selectedSeatType = new List<SeatType>();
             trainNumbers=new List<KeyValuePair<string,string>>();
             ordersPassengers = new BindingList<Passenger>();
@@ -1479,6 +1490,12 @@ namespace DeGuangTicketsHelper
             dgvcbcSlected.DataPropertyName = "Selected";
             dgvcbcSlected.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
 
+            DataGridViewTextBoxColumn dgtbcTrainDate = new DataGridViewTextBoxColumn();
+            dgtbcTrainDate.Name = "dgtbcTrainDate";
+            dgtbcTrainDate.HeaderText = "列车日期";
+            dgtbcTrainDate.DataPropertyName = "TrainDate";
+            dgtbcTrainDate.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
+            
             DataGridViewTextBoxColumn dgtbcTrainNo = new DataGridViewTextBoxColumn();
             dgtbcTrainNo.Name = "dgtbcTrainNo";
             dgtbcTrainNo.HeaderText = "车次";
@@ -1515,7 +1532,7 @@ namespace DeGuangTicketsHelper
             dgtbcElapsedTime.DataPropertyName = "ElapsedTime";
             dgtbcElapsedTime.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
 
-            dgvTiketInfo.Columns.AddRange(dgvcbcSlected,dgtbcTrainNo,dgtbcDepartureStation,dgtbcDrivingTime,dgtbcDestinationStation,dgtbcArrivalTime,dgtbcElapsedTime);
+            dgvTiketInfo.Columns.AddRange(dgvcbcSlected, dgtbcTrainDate, dgtbcTrainNo, dgtbcDepartureStation, dgtbcDrivingTime, dgtbcDestinationStation, dgtbcArrivalTime, dgtbcElapsedTime);
 
             SeatType seatType;
             for (int i = 0; i < CommData.SeatTypeCount; i++)
@@ -1752,8 +1769,14 @@ namespace DeGuangTicketsHelper
             Cursor.Current = Cursors.WaitCursor;
             try
             {
-                getTicketInfos();
-                labTicketInfo.Text = getTicketInfo(dtpDepartureDate.Value, cboDepartureStation.Text, cboDestinationStation.Text, ticketInfoList.Count);
+                if (chkRepeat.Checked == true)
+                {
+                    repeatQueryTicketInfos();
+                }
+                else
+                {
+                    queryTicketInfos();
+                }
             }
             catch (Exception ex)
             {
@@ -1762,6 +1785,58 @@ namespace DeGuangTicketsHelper
             finally
             {
                 Cursor.Current = Cursors.Default;
+            }
+        }
+
+        private void repeatQueryTicketInfos()
+        {
+            initQueryTimer();
+        }
+
+        void queryTime_Tick(object sender, EventArgs e)
+        {
+            queryTicketInfos();
+        }
+
+        private void queryTicketInfos()
+        {
+            try
+            {
+                if (queryTicketRunning == false)
+                {
+                    queryTicketRunning = true;
+                    getTicketInfos();
+                    labTicketInfo.Text = getTicketInfo(dtpDepartureDate.Value, cboDepartureStation.Text, cboDestinationStation.Text, ticketInfoList.Count);
+                }
+            }
+            catch (WebException webex)
+            {
+                Debug.WriteLine(webex);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            finally
+            {
+                queryTicketRunning = false;
+            }
+        }
+
+        /// <summary>
+        /// 得到当前窗口的查询条件实体
+        /// </summary>
+        private QueryTicketParam QueryTicketParam
+        {
+            get
+            {
+                return new QueryTicketParam(dtpDepartureDate.Value.ToString("yyyy-MM-dd"),
+                cboDepartureStation.SelectedValue.ToString(),
+                cboDestinationStation.SelectedValue.ToString(),
+                cboTrainNumber.SelectedValue == null ? string.Empty : cboTrainNumber.SelectedValue.ToString(),
+                getTrainPassType(),
+                HttpUtility.UrlEncode(getTrainClass()),
+                cboDepartureTime.SelectedValue.ToString());
             }
         }
 
@@ -1781,27 +1856,63 @@ namespace DeGuangTicketsHelper
             // includeStudent=00&
             // seatTypeAndNum=&
             // orderRequest.start_time_str=00%3A00--24%3A00
-            string url = "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?" +
-                "method=queryLeftTicket" +
-                "&orderRequest.train_date=" + dtpDepartureDate.Value.ToString("yyyy-MM-dd") +
-                "&orderRequest.from_station_telecode=" + cboDepartureStation.SelectedValue +
-                "&orderRequest.to_station_telecode=" + cboDestinationStation.SelectedValue +
-                "&orderRequest.train_no=" + cboTrainNumber.SelectedValue +
-                "&trainPassType=" + getTrainPassType() +
-                "&trainClass=" + HttpUtility.UrlEncode(getTrainClass()) +
-                "&includeStudent=00" +
-                "&seatTypeAndNum=" +
-                "&orderRequest.start_time_str=" + cboDepartureTime.SelectedValue;
-            string result = CommUitl.getString(url, CommData.cookieContainer);
+            string webResult=string.Empty;
+            QueryTicketParam queryTicketParam;
+            if (lstSelectTick.Items.Count == 0 || chkQueryBySelect.Checked==false)
+            {
+                queryTicketParam = QueryTicketParam;
+
+                webResult = queryTicketInfos(queryTicketParam);
+            }
+            else
+            {
+                foreach (var item in lstSelectTick.Items)
+                {
+                    queryTicketParam = item as QueryTicketParam;
+                    webResult += queryTicketInfos(queryTicketParam)+"\\n";
+                }
+            }
+            ticketJsonResult_old = ticketJsonResult;
+            ticketJsonResult = webResult;
             //result = "0,<span id='id_65000K921210' class='base_txtdiv' onmouseover=javascript:onStopHover('65000K921210#SZQ#CSQ') onmouseout='onStopOut()'>K9212</span>,<img src='/otsweb/images/tips/first.gif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;深圳&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;09:14,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;长沙&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;19:55,10:41,--,--,--,--,--,--,--,--,<font color='darkgray'>无</font>,<font color='darkgray'>无</font>,--,<input type='button' class='yuding_x'  value='预订'></input>\n1,<span id='id_69000K906405' class='base_txtdiv' onmouseover=javascript:onStopHover('69000K906405#OSQ#CSQ') onmouseout='onStopOut()'>K9064</span>,<img src='/otsweb/images/tips/first.gif'>&nbsp;&nbsp;&nbsp;&nbsp;深圳西&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;11:26,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;长沙&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;22:03,10:37,--,--,--,--,--,--,<font color='darkgray'>无</font>,--,<font color='darkgray'>无</font>,<font color='darkgray'>无</font>,--,<input type='button' class='yuding_x'  value='预订'></input>\n2,<span id='id_65000K116810' class='base_txtdiv' onmouseover=javascript:onStopHover('65000K116810#SZQ#CSQ') onmouseout='onStopOut()'>K1168</span>,<img src='/otsweb/images/tips/first.gif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;深圳&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;15:15,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;长沙&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;04:23,13:08,--,--,--,--,--,--,--,--,<font color='darkgray'>无</font>,<font color='darkgray'>无</font>,--,<input type='button' class='yuding_x'  value='预订'></input>\n3,<span id='id_6500000T9607' class='base_txtdiv' onmouseover=javascript:onStopHover('6500000T9607#SZQ#CSQ') onmouseout='onStopOut()'>T96</span>,<img src='/otsweb/images/tips/first.gif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;深圳&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;17:40,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;长沙&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;02:43,09:03,--,--,--,--,--,<font color='darkgray'>无</font>,<font color='darkgray'>无</font>,--,<font color='darkgray'>无</font>,<font color='darkgray'>无</font>,--,<input type='button' class='yuding_x'  value='预订'></input>\n4,<span id='id_65000K900402' class='base_txtdiv' onmouseover=javascript:onStopHover('65000K900402#SZQ#CSQ') onmouseout='onStopOut()'>K9004</span>,<img src='/otsweb/images/tips/first.gif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;深圳&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;19:20,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;长沙&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;05:50,10:30,--,--,--,--,--,<font color='darkgray'>无</font>,<font color='darkgray'>无</font>,--,<font color='darkgray'>无</font>,<font color='darkgray'>无</font>,--,<input type='button' class='yuding_x'  value='预订'></input>\n5,<span id='id_65000K907606' class='base_txtdiv' onmouseover=javascript:onStopHover('65000K907606#SZQ#CSQ') onmouseout='onStopOut()'>K9076</span>,<img src='/otsweb/images/tips/first.gif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;深圳&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;19:36,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;长沙&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;05:44,10:08,--,--,--,--,--,<font color='darkgray'>无</font>,<font color='darkgray'>无</font>,--,<font color='darkgray'>无</font>,<font color='darkgray'>无</font>,--,<input type='button' class='yuding_x'  value='预订'></input>\n6,<span id='id_65000K901803' class='base_txtdiv' onmouseover=javascript:onStopHover('65000K901803#SZQ#CSQ') onmouseout='onStopOut()'>K9018</span>,<img src='/otsweb/images/tips/first.gif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;深圳&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;20:50,<img src='/otsweb/images/tips/last.gif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;长沙&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;06:36,09:46,--,--,--,--,--,<font color='darkgray'>无</font>,<font color='darkgray'>无</font>,--,<font color='darkgray'>无</font>,<font color='darkgray'>无</font>,--,<input type='button' class='yuding_x'  value='预订'></input>\n7,<span id='id_69000K921400' class='base_txtdiv' onmouseover=javascript:onStopHover('69000K921400#OSQ#CSQ') onmouseout='onStopOut()'>K9214</span>,<img src='/otsweb/images/tips/first.gif'>&nbsp;&nbsp;&nbsp;&nbsp;深圳西&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;23:55,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;长沙&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;10:21,10:26,--,--,--,--,--,--,--,--,<font color='darkgray'>无</font>,<font color='darkgray'>无</font>,--,<input type='button' class='yuding_x'  value='预订'></input>";
-            if (result.IndexOf("系统维护中") > 0)
+            if (ticketJsonResult.IndexOf("系统维护中") > 0)
             {
                 MessageBox.Show("系统维护中!", "提示", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
             }
             else
             {
-                dgvTiketInfo.DataSource = getTicketInfos(result);
+                if (ticketJsonResult != ticketJsonResult_old)
+                {
+                    //MessageBox.Show("车票信息已经改变!");
+                    this.Activate();
+                    dgvTiketInfo.DataSource = getTicketInfos(ticketJsonResult);
+                }
             }
+        }
+
+        /// <summary>
+        /// 从12306得到列车信息
+        /// </summary>
+        /// <param name="queryTicketParam"></param>
+        /// <returns></returns>
+        private static string queryTicketInfos(QueryTicketParam queryTicketParam)
+        {
+            string url = "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?" +
+                "method=queryLeftTicket" +
+                "&orderRequest.train_date=" + queryTicketParam.TrainDate +
+                "&orderRequest.from_station_telecode=" + queryTicketParam.FormStationTelecode +
+                "&orderRequest.to_station_telecode=" + queryTicketParam.ToStationTelecode +
+                "&orderRequest.train_no=" + queryTicketParam.TrainNo +
+                "&trainPassType=" + queryTicketParam.TrainPassType +
+                "&trainClass=" + queryTicketParam.TrainClass +
+                "&includeStudent=00" +
+                "&seatTypeAndNum=" +
+                "&orderRequest.start_time_str=" + queryTicketParam.StartTimeStr;
+            string result = CommUitl.getString(url, CommData.cookieContainer);
+            // 加入日期信息,用于查询多日火车票信息
+            result = result.Replace("<span id='id_", queryTicketParam.TrainDate+",<span id='id_");
+            result = result.Replace("getSelected('", "getSelected('"+queryTicketParam.TrainDate+"#");
+            return result;
         }
 
         /// <summary>
@@ -1820,6 +1931,11 @@ namespace DeGuangTicketsHelper
             if (int.TryParse(result,out numResult)==false)
             {
                 Dictionary<string, string> jsInfos = getJsInfo(result);
+                #region 取得TrainNo
+                result = result.Replace("<span id='id_", string.Empty);
+                result = result.Replace("' class='base_txtdiv' onmouseover=javascript:onStopHover('", ",");
+                result = result.Replace("') onmouseout='onStopOut()'>", ",");
+                #endregion
                 result = CommUitl.ReplaceHTMLAttributes(result);
                 string[] ticketInfoStrs = result.Split(new string[] { "\\n" }, StringSplitOptions.RemoveEmptyEntries);
                 string[] ticketInfos;
@@ -1829,35 +1945,40 @@ namespace DeGuangTicketsHelper
                 {
                     ticketInfos = ticketInfoStrs[i].Split(',');
                     ticketInfo = new TicketInfo();
+                    ticketInfo.TrainDate = ticketInfos[1];
+                    ticketInfo.TrainNo = ticketInfos[2];
                     ticketInfo.ID = Convert.ToInt32(ticketInfos[0]);
-                    ticketInfo.StationTrainCode = ticketInfos[1];
-                    stations = ticketInfos[2].Replace("  ", " ").Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    ticketInfo.StationTrainCode = ticketInfos[3+1];
+                    stations = ticketInfos[3+2].Replace("  ", " ").Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                     ticketInfo.DepartureStation = stations[0];
                     ticketInfo.DrivingTime = stations[1];
-                    stations = ticketInfos[3].Replace("  ", " ").Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    stations = ticketInfos[3+3].Replace("  ", " ").Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                     ticketInfo.DestinationStation = stations[0];
                     ticketInfo.ArrivalTime = stations[1];
-                    ticketInfo.ElapsedTime = ticketInfos[4];
+                    ticketInfo.ElapsedTime = ticketInfos[3+4];
                     //ticketInfo.SeetInfos = new Dictionary<SeatType, string>();
                     //for (int j = 0; j < 11; j++)
                     //{
                     //    ticketInfo.SeetInfos.Add((SeatType)j, ticketInfos[j + 5]);
                     //    //Debug.WriteLine("ticketInfo." + (SeatType)j + "=ticketInfos["+(j + 5)+"];");
                     //}
-                    ticketInfo.BusinessBlock = ticketInfos[5];
-                    ticketInfo.PrincipalSeat = ticketInfos[6];
-                    ticketInfo.FirstClassSeat = ticketInfos[7];
-                    ticketInfo.SecondClassSeat = ticketInfos[8];
-                    ticketInfo.AdvancedSoftSleeper = ticketInfos[9];
-                    ticketInfo.SoftSleeper = ticketInfos[10];
-                    ticketInfo.HardSleeper = ticketInfos[11];
-                    ticketInfo.SoftSeat = ticketInfos[12];
-                    ticketInfo.HardSeat = ticketInfos[13];
-                    ticketInfo.NoSeat = ticketInfos[14];
-                    ticketInfo.Other = ticketInfos[15];
+                    ticketInfo.BusinessBlock = ticketInfos[3+5];
+                    ticketInfo.PrincipalSeat = ticketInfos[3+6];
+                    ticketInfo.FirstClassSeat = ticketInfos[3+7];
+                    ticketInfo.SecondClassSeat = ticketInfos[3+8];
+                    ticketInfo.AdvancedSoftSleeper = ticketInfos[3+9];
+                    ticketInfo.SoftSleeper = ticketInfos[3+10];
+                    ticketInfo.HardSleeper = ticketInfos[3+11];
+                    ticketInfo.SoftSeat = ticketInfos[3+12];
+                    ticketInfo.HardSeat = ticketInfos[3+13];
+                    ticketInfo.NoSeat = ticketInfos[3+14];
+                    ticketInfo.Other = ticketInfos[3+15];
                     try
                     {
-                        ticketInfo.JsInfoString = jsInfos[ticketInfo.StationTrainCode];
+                        if (jsInfos.ContainsKey(ticketInfo.StationTrainCode) == true)
+                        {
+                            ticketInfo.JsInfoString = jsInfos[ticketInfo.TrainDate+ticketInfo.StationTrainCode];
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -1885,7 +2006,7 @@ namespace DeGuangTicketsHelper
                 if (tmpRsult[i].IndexOf("') value='预订'") > -1)
                 {
                     jsInfo = tmpRsult[i].Split(new string[] { "') value='预订'" }, StringSplitOptions.RemoveEmptyEntries)[0];
-                    result.Add(jsInfo.Split('#')[0], jsInfo);
+                    result.Add(jsInfo.Split('#')[0] + jsInfo.Split('#')[1], jsInfo);
                 }
             }
             return result;
@@ -1947,7 +2068,7 @@ namespace DeGuangTicketsHelper
         private string getTicketInfo(DateTime departureDate, string departureStationName, string destinationStationName, int trainCount)
         {
             string result;
-            result = string.Format("出发日期：{0}    {1}→{2}(共 {3} 趟列车)",departureDate.ToString("yyyy-MM-dd"),departureStationName,destinationStationName,trainCount);
+            result = string.Format("查询时间:{0} 出发日期：{1}    {2}→{3}(共 {4} 趟列车)",DateTime.Now.ToString("HH:mm:ss"),departureDate.ToString("yyyy-MM-dd"),departureStationName,destinationStationName,trainCount);
             return result;
         }
         #endregion
@@ -2159,7 +2280,8 @@ namespace DeGuangTicketsHelper
             postData.Add(new KeyValuePair<string,string>("start_time_str", "00:00--24:00"));
             postData.Add(new KeyValuePair<string,string>("lishi", ticketInfo.ElapsedTime));
             postData.Add(new KeyValuePair<string,string>("train_start_time", ticketInfo.DrivingTime));
-            postData.Add(new KeyValuePair<string,string>("trainno", ticketInfo.TrainNo));
+            //postData.Add(new KeyValuePair<string,string>("trainno", ticketInfo.TrainNo));
+            postData.Add(new KeyValuePair<string, string>("trainno4", ticketInfo.TrainNo));
             postData.Add(new KeyValuePair<string,string>("arrive_time", ticketInfo.ArrivalTime));
             postData.Add(new KeyValuePair<string,string>("from_station_name", ticketInfo.DepartureStation));
             postData.Add(new KeyValuePair<string,string>("to_station_name", ticketInfo.DestinationStation));
@@ -2206,7 +2328,16 @@ namespace DeGuangTicketsHelper
             //param.Add(new KeyValuePair<string,string>("ypInfoDetail", ticketInfo.InfoDetail);
             try
             {
-                string webResult = CommUitl.postString(submutOrderRequestUrl, postData, null, null, Encoding.UTF8, CommData.cookieCollection, "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=init");
+                string webResult;
+                while (true)
+                {
+                    webResult = CommUitl.postString(submutOrderRequestUrl, postData, null, null, Encoding.UTF8, CommData.cookieCollection, "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=init");
+                    if (webResult.IndexOf("系统忙")== -1)
+                    {
+                        Thread.Sleep(1000);
+                        break;
+                    }
+                }
                 string message = getMessage(webResult);
                 if (string.IsNullOrEmpty(message) == false)
                 {
@@ -2313,8 +2444,8 @@ namespace DeGuangTicketsHelper
         private void initDgvOrderSeatType(TicketInfo ticket)
         {
             DataGridViewComboBoxColumn dgvcbcSeatType;
-            dgvcbcSeatType = dgvOrder.Columns["dgvcbcSeatType"] as DataGridViewComboBoxColumn;
-            dgvcbcSeatType.DataSource = getSeatTypies(ticket);
+            //dgvcbcSeatType = dgvOrder.Columns["dgvcbcSeatType"] as DataGridViewComboBoxColumn;
+            //dgvcbcSeatType.DataSource = getSeatTypies(ticket);
         }
 
         private void getVerificationCode()
@@ -2440,10 +2571,39 @@ namespace DeGuangTicketsHelper
                 {
                     MessageBox.Show(message);
                 }
-                else if (webResult.IndexOf("席位已成功锁定")>-1)
+                //else if (webResult.IndexOf("席位已成功锁定")>-1)
+                //{
+                //    MessageBox.Show("恭喜，您预订的席位已成功锁定!请在新开启的IE浏览器中进行支付!","恭喜",  MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1);
+                //    openIE();
+                //}
+                else if (webResult.IndexOf("{\"errMsg\":\"Y\"}") > -1)
                 {
-                    MessageBox.Show("恭喜，您预订的席位已成功锁定!请在新开启的IE浏览器中进行支付!","恭喜",  MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1);
-                    openIE();
+                    string orderActionUrl="https://dynamic.12306.cn/otsweb/order/myOrderAction.do?method=getOrderWaitTime&tourFlag=dc";
+                    while (true)
+                    {
+                        message = CommUitl.getString(orderActionUrl,CommData.cookieContainer);
+                        if (message.IndexOf("\"waitTime\":-1") > -1)
+                        {
+                            orderActionUrl = "https://dynamic.12306.cn/otsweb/order/confirmPassengerAction.do?method=payOrder&orderSequence_no=E173480190";
+                            message = CommUitl.getString(orderActionUrl,CommData.cookieContainer);
+                            if (message.IndexOf("<tr class=\"table_zpj\">") > -1)
+                            {
+                                MessageBox.Show("恭喜，您预订的席位已成功锁定!请在新开启的IE浏览器中进行支付!", "恭喜", MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1);
+                                openIE();
+                            }
+                            else
+                            {
+                                MessageBox.Show("火车票锁定失败！信息:" + message);
+                            }
+                            break;
+                        }
+                        else if(message.IndexOf("\"waitTime\":-2")>-1)
+                        {
+                            MessageBox.Show("火车票锁定失败！信息:" + message);
+                            break;
+                        }
+                        Thread.Sleep(1000);
+                    }
                 }
             }
             catch (Exception ex)
@@ -2512,17 +2672,21 @@ namespace DeGuangTicketsHelper
         private string submitOrder(OrderInfo order, string randCode)
         {
             string result=string.Empty;
-            string url = "https://dynamic.12306.cn/otsweb/order/confirmPassengerAction.do?method=confirmPassengerInfoSingle";
+            //2012-9-10修改提交订单URL
+            string url = "https://dynamic.12306.cn/otsweb/order/confirmPassengerAction.do?method=confirmSingleForQueueOrder";
+            //string url = "https://dynamic.12306.cn/otsweb/order/confirmPassengerAction.do?method=confirmPassengerInfoSingle";
             List<KeyValuePair<string, string>> postData = new List<KeyValuePair<string, string>>();
             postData.Add(new KeyValuePair<string,string>("org.apache.struts.taglib.html.TOKEN", order.Token));
             postData.Add(new KeyValuePair<string,string>("textfield", "中文或拼音首字母"));
-            postData.Add(new KeyValuePair<string,string>("checkbox0", "0"));
+            // 如果从保存的联系人中勾选，则此处为checkbox[数字] 名称+[数字]序号
+            //postData.Add(new KeyValuePair<string,string>("checkbox0", "0"));
             postData.Add(new KeyValuePair<string,string>("orderRequest.train_date", order.TrainDate));
             postData.Add(new KeyValuePair<string,string>("orderRequest.train_no", order.TicketInfo.TrainNo));
             postData.Add(new KeyValuePair<string,string>("orderRequest.station_train_code", order.TicketInfo.StationTrainCode));
             postData.Add(new KeyValuePair<string,string>("orderRequest.from_station_telecode", order.TicketInfo.DepartureStationTelCode));
             postData.Add(new KeyValuePair<string,string>("orderRequest.to_station_telecode", order.TicketInfo.DestinationStationTelCode));
             postData.Add(new KeyValuePair<string,string>("orderRequest.seat_type_code", ""));
+            postData.Add(new KeyValuePair<string,string>("orderRequest.seat_detail_type_code", ""));
             postData.Add(new KeyValuePair<string,string>("orderRequest.ticket_type_order_num", ""));
             postData.Add(new KeyValuePair<string,string>("orderRequest.bed_level_order_num", "000000000000000000000000000000"));
             postData.Add(new KeyValuePair<string,string>("orderRequest.start_time", order.TicketInfo.DrivingTime));
@@ -2538,15 +2702,17 @@ namespace DeGuangTicketsHelper
                 if (i < order.Passengers.Count)
                 {
                     passenger = order.Passengers[i];
-                    postData.Add(new KeyValuePair<string,string>("passengerTickets", passenger.PassengerTickets));
-                    postData.Add(new KeyValuePair<string,string>("oldPassengers", passenger.OldPassengers));
-                    postData.Add(new KeyValuePair<string,string>("passenger_"+(i+1)+"_seat", passenger.SeatType));
-                    postData.Add(new KeyValuePair<string,string>("passenger_"+(i+1)+"_ticket", passenger.PassengerTicket));
-                    postData.Add(new KeyValuePair<string,string>("passenger_"+(i+1)+"_name",passenger.Name));
-                    postData.Add(new KeyValuePair<string,string>("passenger_"+(i+1)+"_cardtype", passenger.IDCardType));
-                    postData.Add(new KeyValuePair<string,string>("passenger_"+(i+1)+"_cardno", passenger.CardNo));
-                    postData.Add(new KeyValuePair<string,string>("passenger_"+(i+1)+"_mobileno", passenger.MobileNo));
-                    postData.Add(new KeyValuePair<string,string>("checkbox9", "Y"));
+                    postData.Add(new KeyValuePair<string, string>("passengerTickets", passenger.PassengerTickets));
+                    postData.Add(new KeyValuePair<string, string>("oldPassengers", passenger.OldPassengers));
+                    postData.Add(new KeyValuePair<string, string>("passenger_" + (i + 1) + "_seat", passenger.SeatType));
+                    postData.Add(new KeyValuePair<string, string>("passenger_" + (i + 1) + "_seat_detail", passenger.Seat_detail));
+                    postData.Add(new KeyValuePair<string, string>("passenger_" + (i + 1) + "_ticket", passenger.PassengerTicket));
+                    postData.Add(new KeyValuePair<string, string>("passenger_" + (i + 1) + "_name", passenger.Name));
+                    postData.Add(new KeyValuePair<string, string>("passenger_" + (i + 1) + "_cardtype", passenger.IDCardType));
+                    postData.Add(new KeyValuePair<string, string>("passenger_" + (i + 1) + "_cardno", passenger.CardNo));
+                    postData.Add(new KeyValuePair<string, string>("passenger_" + (i + 1) + "_mobileno", passenger.MobileNo));
+                    //保存到常用联系人
+                    //postData.Add(new KeyValuePair<string, string>("checkbox9", "Y"));
                 }
                 else
                 {
@@ -2557,7 +2723,9 @@ namespace DeGuangTicketsHelper
             postData.Add(new KeyValuePair<string,string>("randCode", randCode));
             postData.Add(new KeyValuePair<string,string>("orderRequest.reserve_flag", "A"));
 
-            result= CommUitl.postString(url, postData, null, null, Encoding.UTF8, CommData.cookieCollection, "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=init");
+            //result= CommUitl.postString(url, postData, null, null, Encoding.UTF8, CommData.cookieCollection, "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=init");
+            //result = CommUitl.postString(url, postData, null, null, Encoding.UTF8, CommData.cookieCollection, "https://dynamic.12306.cn/otsweb/order/confirmPassengerAction.do?method=init#");
+            result = CommUitl.postString(url, postData, null, null, Encoding.UTF8, CommData.cookieCollection, "https://dynamic.12306.cn/otsweb/order/confirmPassengerAction.do?method=init");
             return result;
         }
 
@@ -2690,6 +2858,8 @@ namespace DeGuangTicketsHelper
             result.Add(new KeyValuePair<string, string>("4", "软卧"));
             result.Add(new KeyValuePair<string, string>("6", "高级软卧"));
             result.Add(new KeyValuePair<string, string>("9", "商务座"));
+            result.Add(new KeyValuePair<string, string>("7", "一等软座"));
+            result.Add(new KeyValuePair<string, string>("8", "二等软座"));
             result.Add(new KeyValuePair<string, string>("M", "一等座"));
             result.Add(new KeyValuePair<string, string>("O", "二等座"));
             result.Add(new KeyValuePair<string, string>("P", "特等座"));
@@ -2761,5 +2931,75 @@ namespace DeGuangTicketsHelper
             return result;
         }
 
+        private void chkRepeat_CheckedChanged(object sender, EventArgs e)
+        {
+            if (chkRepeat != null)
+            {
+                if (chkRepeat.Checked == true)
+                {
+                    TimQuery.Enabled = true;
+                }
+                else
+                {
+                    TimQuery.Enabled = false;
+                }
+            }
+        }
+
+        private System.Windows.Forms.Timer TimQuery
+        {
+            get
+            {
+                if (timQuery == null)
+                {
+                    initQueryTimer();
+                }
+                return timQuery;
+            }
+        }
+
+
+        private void initQueryTimer()
+        {
+            if (timQuery == null)
+            {
+                timQuery = new System.Windows.Forms.Timer();
+                timQuery.Interval = new Random((int)DateTime.Now.Ticks).Next(Convert.ToInt32(5000));
+                timQuery.Tick += new EventHandler(queryTime_Tick);
+            }
+        }
+
+        private void dgvTiketInfo_CurrentCellDirtyStateChanged(object sender, EventArgs e)
+        {
+            if (dgvTiketInfo.IsCurrentCellDirty)
+            {
+                dgvTiketInfo.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            }
+        }
+
+        private void dgvTiketInfo_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.ColumnIndex == 0)
+            {
+                DataGridViewCheckBoxCell chkSelect = dgvTiketInfo[0, e.RowIndex] as DataGridViewCheckBoxCell;
+                TicketInfo selectTicket = dgvTiketInfo.Rows[e.RowIndex].DataBoundItem as TicketInfo;
+                QueryTicketParam queryTicketParam = QueryTicketParam;
+                queryTicketParam.TicketInfo = selectTicket;
+                if ((bool)chkSelect.Value == true)
+                {
+                    if (lstSelectTick.Items.Contains(queryTicketParam) == false)
+                    {
+                        lstSelectTick.Items.Add(queryTicketParam);
+                    }
+                }
+                else
+                {
+                    if (lstSelectTick.Items.Contains(queryTicketParam) == true)
+                    {
+                        lstSelectTick.Items.Remove(queryTicketParam);
+                    }
+                }
+            }
+        }
     }
 }

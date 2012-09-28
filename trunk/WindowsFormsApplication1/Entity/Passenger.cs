@@ -11,7 +11,8 @@ namespace DeGuangTicketsHelper.Entity
     {
         public Passenger()
         {
-            IdMode = "Y";
+            IdMode = "N";
+            Seat_detail = "0";
         }
         /// <summary>
         /// 姓名
@@ -34,9 +35,13 @@ namespace DeGuangTicketsHelper.Entity
         /// </summary>
         public string MobileNo { get; set; }
         /// <summary>
-        /// 座位类型,-1 无座;1 硬座 ;2 软座;3 硬卧;4 软卧 ;6 高级软卧;9 商务座  ;M 一等座 ;O 二等座 ;P 特等座
+        /// 座位类型,-1 无座;1 硬座 ;2 软座;3 硬卧;4 软卧 ;6 高级软卧;9 商务座  ;7 一等软座;8 二等软座;M 一等座 ;O 二等座 ;P 特等座
         /// </summary>
         public string SeatType { get; set; }
+        /// <summary>
+        /// 卧铺类型 0 随机 3 上铺 2 中铺 1 下铺
+        /// </summary>
+        public string Seat_detail { get; set; }
         /// <summary>
         /// 乘客票类型 1 成人票 ;2 儿童票 ;3 学生票 ;4 残军票 
         /// </summary>
@@ -52,7 +57,7 @@ namespace DeGuangTicketsHelper.Entity
         {
             get
             {
-                return SeatType+","+PassengerTicket+","+Name+","+IDCardType+","+CardNo+","+MobileNo+","+IdMode;
+                return SeatType + "," + Seat_detail + "," + PassengerTicket + "," + Name + "," + IDCardType + "," + CardNo + "," + MobileNo + "," + IdMode;
             }
         }
         /// <summary>
@@ -63,6 +68,7 @@ namespace DeGuangTicketsHelper.Entity
             get
             {
                 return Name + "," + IDCardType + "," + CardNo;
+                //return string.Empty;
             }
         }
     }
