@@ -275,11 +275,12 @@ namespace DeGuangTicketsHelper.Entity
                 {
                     jsInfoString = value;
                     string[] infos = jsInfoString.Split('#');
-                    TrainNo = infos[3];
-                    DepartureStationTelCode = infos[4];
-                    DestinationStationTelCode = infos[5];
-                    InfoDetail = infos[9];
-                    MmStr = infos[10];
+                    TrainDate = infos[1];
+                    TrainNo = infos[1+3];
+                    DepartureStationTelCode = infos[1+4];
+                    DestinationStationTelCode = infos[1+5];
+                    InfoDetail = infos[1+9];
+                    MmStr = infos[1+10];
                 }
             }
         }
@@ -289,6 +290,10 @@ namespace DeGuangTicketsHelper.Entity
         /// 列车编号
         /// </summary>
         public string TrainNo { get; set; }
+        /// <summary>
+        /// 列车日期
+        /// </summary>
+        public string TrainDate { get; set; }
         /// <summary>
         /// 发站编号
         /// </summary>

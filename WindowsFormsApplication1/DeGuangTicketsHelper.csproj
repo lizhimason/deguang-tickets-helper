@@ -54,6 +54,7 @@
     <Compile Include="Entity\EnumDescriptionHelper.cs" />
     <Compile Include="Entity\MonitorEntity.cs" />
     <Compile Include="Entity\Passenger.cs" />
+    <Compile Include="Entity\QueryTicketParam.cs" />
     <Compile Include="Entity\Station.cs" />
     <Compile Include="Entity\TicketInfo.cs" />
     <Compile Include="frmTicketQuery.cs">
